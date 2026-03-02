@@ -14,10 +14,17 @@ declare const self: ServiceWorkerGlobalScope & typeof globalThis;
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
-  skipWaiting: true,
+  skipWaiting: false,
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: defaultCache,
 });
 
 serwist.addEventListeners();
+
+// Allow the UpdatePrompt UI to trigger activation
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { User, Home, Store, Calendar, ChevronRight, LogOut } from "lucide-react";
+import { User, Home, Store, Calendar, ChevronRight, LogOut, Download } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePWAInstall } from "@/contexts/PWAInstallContext";
 
 const SETTINGS_ITEMS = [
   {
@@ -33,6 +34,7 @@ const SETTINGS_ITEMS = [
 
 export default function SettingsPage() {
   const { user, memberProfile, signOut } = useAuth();
+  const { canInstall, install } = usePWAInstall();
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -83,6 +85,22 @@ export default function SettingsPage() {
           </Link>
         ))}
       </div>
+
+      {/* Install app */}
+      {canInstall && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+          <p className="text-sm font-semibold text-gray-900 mb-1">Install app</p>
+          <p className="text-xs text-gray-400 mb-3">Add Homie to your home screen for the best experience.</p>
+          <button
+            onClick={install}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-medium"
+            style={{ backgroundColor: "#FF6B6B" }}
+          >
+            <Download size={15} />
+            Add to Home Screen
+          </button>
+        </div>
+      )}
 
       {/* Sign out */}
       <button
