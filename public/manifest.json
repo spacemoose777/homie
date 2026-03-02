@@ -1,0 +1,45 @@
+{
+  "name": "Homie",
+  "short_name": "Homie",
+  "description": "Household management for families",
+  "start_url": "/shopping",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FF6B6B",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Shopping",
+      "short_name": "Shop",
+      "description": "View shopping list",
+      "url": "/shopping"
+    },
+    {
+      "name": "Meals",
+      "short_name": "Meals",
+      "description": "View meal planner",
+      "url": "/meals"
+    }
+  ],
+  "categories": ["lifestyle", "utilities"]
+}

@@ -1,0 +1,84 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function userHouseholdId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.householdId;
+    }
+
+    function isMember(hid) {
+      return isAuth() && userHouseholdId() == hid;
+    }
+
+    function isAdmin(hid) {
+      return isMember(hid) &&
+        get(/databases/$(database)/documents/households/$(hid)/members/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ── /users/{uid} ──
+    match /users/{uid} {
+      allow read: if isAuth() && request.auth.uid == uid;
+      allow create: if isAuth() && request.auth.uid == uid;
+      allow update: if isAuth() && request.auth.uid == uid;
+    }
+
+    // ── /households/{hid} ──
+    match /households/{hid} {
+      allow read: if isMember(hid);
+      allow create: if isAuth();
+      allow update: if isAdmin(hid);
+
+      // ── /households/{hid}/members/{uid} ──
+      match /members/{uid} {
+        allow read: if isMember(hid);
+        allow update: if isMember(hid) && request.auth.uid == uid;
+        allow create: if isAuth() && (request.auth.uid == uid || isAdmin(hid));
+        allow delete: if isAdmin(hid);
+      }
+
+      // ── /households/{hid}/invites/{token} ──
+      match /invites/{token} {
+        allow read: if true;
+        allow create: if isAdmin(hid);
+        allow update: if isAuth();
+        allow delete: if isAdmin(hid);
+      }
+
+      // ── /households/{hid}/shoppingItems/{id} ──
+      match /shoppingItems/{id} {
+        allow read, write: if isMember(hid);
+      }
+
+      // ── /households/{hid}/itemMemory/{name} ──
+      match /itemMemory/{name} {
+        allow read, write: if isMember(hid);
+      }
+
+      // ── /households/{hid}/meals/{id} ──
+      match /meals/{id} {
+        allow read, write: if isMember(hid);
+      }
+
+      // ── /households/{hid}/weekPlans/{weekDate} ──
+      match /weekPlans/{weekDate} {
+        allow read, write: if isMember(hid);
+      }
+
+      // ── /households/{hid}/calendarEvents/{id} ──
+      match /calendarEvents/{id} {
+        allow read, write: if isMember(hid);
+      }
+
+      // ── /households/{hid}/stores/{storeId} ──
+      match /stores/{storeId} {
+        allow read: if isMember(hid);
+        allow create, update, delete: if isAdmin(hid);
+      }
+    }
+  }
+}

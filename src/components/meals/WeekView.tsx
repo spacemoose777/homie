@@ -1,0 +1,150 @@
+"use client";
+
+import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
+import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay } from "date-fns";
+import type { Meal, WeekPlan, DayPlan } from "@/types";
+
+interface WeekViewProps {
+  meals: Meal[];
+  weekPlan: WeekPlan | null;
+  weekStart: Date;
+  onWeekChange: (date: Date) => void;
+  onPickMeal: (date: string, slot: keyof DayPlan) => void;
+  onClearSlot: (date: string, slot: keyof DayPlan) => void;
+}
+
+const SLOTS: { key: keyof DayPlan; label: string }[] = [
+  { key: "breakfast", label: "Breakfast" },
+  { key: "lunch", label: "Lunch" },
+  { key: "dinner", label: "Dinner" },
+  { key: "snacks", label: "Snacks" },
+];
+
+export default function WeekView({
+  meals,
+  weekPlan,
+  weekStart,
+  onWeekChange,
+  onPickMeal,
+  onClearSlot,
+}: WeekViewProps) {
+  const today = new Date();
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const mealMap = new Map(meals.map((m) => [m.id, m]));
+
+  function getMealName(id: string | null): string | null {
+    if (!id) return null;
+    return mealMap.get(id)?.name ?? null;
+  }
+
+  function getDayPlan(isoDate: string): DayPlan {
+    return weekPlan?.days[isoDate] ?? {
+      breakfast: null,
+      lunch: null,
+      dinner: null,
+      snacks: null,
+    };
+  }
+
+  return (
+    <div>
+      {/* Week nav */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => onWeekChange(subWeeks(weekStart, 1))}
+          className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-white transition-colors"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <div className="text-center">
+          <p className="font-semibold text-gray-900">
+            {format(weekStart, "d MMM")} – {format(addDays(weekStart, 6), "d MMM yyyy")}
+          </p>
+          <button
+            onClick={() => onWeekChange(startOfWeek(today, { weekStartsOn: 1 }))}
+            className="text-xs mt-0.5"
+            style={{ color: "#FF6B6B" }}
+          >
+            Today
+          </button>
+        </div>
+        <button
+          onClick={() => onWeekChange(addWeeks(weekStart, 1))}
+          className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-white transition-colors"
+        >
+          <ChevronRight size={20} />
+        </button>
+      </div>
+
+      {/* Days */}
+      <div className="space-y-3">
+        {days.map((day) => {
+          const isoDate = format(day, "yyyy-MM-dd");
+          const dayPlan = getDayPlan(isoDate);
+          const isToday = isSameDay(day, today);
+
+          return (
+            <div
+              key={isoDate}
+              className="bg-white rounded-2xl shadow-sm border overflow-hidden"
+              style={{ borderColor: isToday ? "#FF6B6B" : "#f3f4f6" }}
+            >
+              {/* Day header */}
+              <div
+                className={`px-4 py-2.5 flex items-center justify-between ${
+                  isToday ? "bg-rose-50" : "bg-gray-50/50"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-900">{format(day, "EEEE")}</span>
+                  <span className="text-sm text-gray-400">{format(day, "d MMM")}</span>
+                </div>
+                {isToday && (
+                  <span
+                    className="text-xs font-medium px-2 py-0.5 rounded-full text-white"
+                    style={{ backgroundColor: "#FF6B6B" }}
+                  >
+                    Today
+                  </span>
+                )}
+              </div>
+
+              {/* Slots */}
+              <div className="divide-y divide-gray-50">
+                {SLOTS.map(({ key, label }) => {
+                  const mealId = dayPlan[key];
+                  const mealName = getMealName(mealId);
+
+                  return (
+                    <div key={key} className="flex items-center gap-3 px-4 py-2.5">
+                      <span className="text-xs text-gray-400 w-16 flex-shrink-0">{label}</span>
+                      {mealName ? (
+                        <div className="flex-1 flex items-center justify-between">
+                          <span className="text-sm text-gray-700 font-medium">{mealName}</span>
+                          <button
+                            onClick={() => onClearSlot(isoDate, key)}
+                            className="p-1 text-gray-300 hover:text-red-400 transition-colors"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => onPickMeal(isoDate, key)}
+                          className="flex items-center gap-1 text-xs text-gray-300 hover:text-gray-500 transition-colors"
+                        >
+                          <Plus size={12} />
+                          Add
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
