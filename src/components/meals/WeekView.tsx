@@ -102,7 +102,7 @@ export default function WeekView({
               >
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-gray-900">{format(day, "EEEE")}</span>
-                  <span className="text-sm text-gray-400">{format(day, "d MMM")}</span>
+                  <span className="text-sm text-gray-600">{format(day, "d MMM")}</span>
                 </div>
                 {isToday && (
                   <span

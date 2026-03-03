@@ -3,12 +3,15 @@
 export const dynamic = "force-dynamic";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import HomieLogo from "@/components/HomieLogo";
 
 export default function LoginPage() {
   const { signIn } = useAuth();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite") ?? undefined;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,7 +21,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const { error: err } = await signIn(email, password);
+    const { error: err } = await signIn(email, password, inviteToken);
     if (err) setError(err);
     setLoading(false);
   }
@@ -32,7 +35,12 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h1 className="text-xl font-semibold text-gray-900 mb-6">Welcome back</h1>
+          <h1 className={`text-xl font-semibold text-gray-900 ${inviteToken ? "mb-1" : "mb-6"}`}>
+            Welcome back
+          </h1>
+          {inviteToken && (
+            <p className="text-sm text-gray-500 mb-6">Sign in to join your household on Homie.</p>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

@@ -31,7 +31,7 @@ interface AuthContextType {
   householdId: string | null;
   memberProfile: MemberProfile | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string, inviteToken?: string) => Promise<{ error: string | null }>;
   signUp: (
     email: string,
     password: string,
@@ -76,9 +76,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, inviteToken?: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const { user: signedInUser } = await signInWithEmailAndPassword(auth, email, password);
+
+      if (inviteToken) {
+        const result = await findInviteByToken(inviteToken);
+        if (!result) return { error: "Invite not found or expired" };
+        if (result.invite.used) return { error: "This invite has already been used" };
+        if (result.invite.expiry.toDate() < new Date()) return { error: "Invite has expired" };
+
+        await joinHousehold(
+          result.householdId,
+          signedInUser.uid,
+          signedInUser.email ?? email,
+          signedInUser.displayName ?? email,
+          result.invite.role as UserRole
+        );
+        await markInviteUsed(result.householdId, inviteToken);
+      }
+
       return { error: null };
     } catch (err: unknown) {
       const code = (err as { code?: string }).code ?? "";
