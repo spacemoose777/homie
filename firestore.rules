@@ -80,5 +80,10 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin(hid);
       }
     }
+
+    // Allow collectionGroup queries on "invites" (needed by findInviteByToken)
+    match /{path=**}/invites/{token} {
+      allow read: if true;
+    }
   }
 }
