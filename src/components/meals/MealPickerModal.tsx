@@ -8,6 +8,7 @@ interface MealPickerModalProps {
   meals: Meal[];
   onPick: (mealId: string) => void;
   onCreateNew: () => void;
+  onQuickCreate: (name: string) => void;
   onClose: () => void;
 }
 
@@ -15,6 +16,7 @@ export default function MealPickerModal({
   meals,
   onPick,
   onCreateNew,
+  onQuickCreate,
   onClose,
 }: MealPickerModalProps) {
   const [search, setSearch] = useState("");
@@ -78,14 +80,24 @@ export default function MealPickerModal({
           )}
         </div>
 
-        {/* Create new */}
-        <div className="border-t border-gray-100 px-4 py-3">
+        {/* Quick create / full editor */}
+        <div className="border-t border-gray-100 px-4 py-3 space-y-2">
+          {search.trim() && (
+            <button
+              onClick={() => { onQuickCreate(search.trim()); onClose(); }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-white transition-colors"
+              style={{ backgroundColor: "#FF6B6B" }}
+            >
+              <Plus size={16} />
+              Add &ldquo;{search.trim()}&rdquo;
+            </button>
+          )}
           <button
-            onClick={() => { onCreateNew(); onClose(); }}
+            onClick={onCreateNew}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border border-dashed border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-600 transition-colors"
           >
             <Plus size={16} />
-            Create new meal
+            Create with details…
           </button>
         </div>
       </div>

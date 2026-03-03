@@ -74,20 +74,34 @@ export default function MealsPage() {
     await updateDaySlot(householdId, weekStartStr, date, slot, null);
   }
 
+  async function handleQuickCreateMeal(name: string) {
+    if (!householdId || !user) return;
+    const slot = slotTarget; // capture before any state changes
+    const mealId = await addMeal(householdId, {
+      name,
+      ingredients: [],
+      tags: [],
+      createdBy: user.uid,
+    });
+    if (slot) {
+      await updateDaySlot(householdId, weekStartStr, slot.date, slot.slot, mealId);
+    }
+  }
+
   async function handleCreateMeal(data: { name: string; ingredients: typeof meals[0]["ingredients"]; tags: string[] }) {
     if (!householdId || !user) return;
+    const slot = slotTarget; // capture before clearing
+    setSlotTarget(null);     // clear now so picker doesn't flash back
+    setShowCreateMeal(false);
     const mealId = await addMeal(householdId, {
       name: data.name,
       ingredients: data.ingredients,
       tags: data.tags,
       createdBy: user.uid,
     });
-    // If we were picking a slot, assign to it
-    if (slotTarget) {
-      await updateDaySlot(householdId, weekStartStr, slotTarget.date, slotTarget.slot, mealId);
-      setSlotTarget(null);
+    if (slot) {
+      await updateDaySlot(householdId, weekStartStr, slot.date, slot.slot, mealId);
     }
-    setShowCreateMeal(false);
   }
 
   async function handleUpdateMeal(data: { name: string; ingredients: typeof meals[0]["ingredients"]; tags: string[] }) {
@@ -129,11 +143,12 @@ export default function MealsPage() {
       />
 
       {/* Meal picker */}
-      {slotTarget && (
+      {slotTarget && !showCreateMeal && (
         <MealPickerModal
           meals={meals}
           onPick={handlePickMeal}
           onCreateNew={() => setShowCreateMeal(true)}
+          onQuickCreate={handleQuickCreateMeal}
           onClose={() => setSlotTarget(null)}
         />
       )}
