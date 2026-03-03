@@ -9,7 +9,7 @@ import BottomNav from "@/components/layout/BottomNav";
 import Sidebar from "@/components/layout/Sidebar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, memberProfile } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -17,6 +17,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       router.replace("/login");
     }
   }, [user, loading, router]);
+
+  // Apply theme and text-size to the root <html> element
+  useEffect(() => {
+    const theme = memberProfile?.theme ?? "petal";
+    const textSize = memberProfile?.textSize ?? "md";
+
+    if (theme === "system") {
+      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = isDark ? "midnight" : "petal";
+    } else {
+      document.documentElement.dataset.theme = theme;
+    }
+    document.documentElement.dataset.textsize = textSize;
+  }, [memberProfile?.theme, memberProfile?.textSize]);
 
   if (loading) {
     return (

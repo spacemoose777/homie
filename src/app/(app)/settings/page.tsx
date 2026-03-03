@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, Home, Store, Calendar, ChevronRight, LogOut, Download } from "lucide-react";
+import { User, Home, Store, Calendar, ChevronRight, LogOut, Download, UtensilsCrossed } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePWAInstall } from "@/contexts/PWAInstallContext";
 
@@ -23,6 +23,12 @@ const SETTINGS_ITEMS = [
     Icon: Store,
     label: "Stores",
     description: "Manage stores & department order",
+  },
+  {
+    href: "/settings/meals",
+    Icon: UtensilsCrossed,
+    label: "Meal planning",
+    description: "Choose which meals to plan",
   },
   {
     href: "/settings/calendar",

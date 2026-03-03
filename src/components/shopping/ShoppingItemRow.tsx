@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Trash2, AlertCircle, Store, Pencil } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Trash2, AlertCircle, Store, GripVertical } from "lucide-react";
 import type { ShoppingItem } from "@/types";
 
 interface ShoppingItemRowProps {
@@ -21,32 +22,46 @@ export default function ShoppingItemRow({
   onDelete,
   onEdit,
 }: ShoppingItemRowProps) {
-  const [deleting, setDeleting] = useState(false);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: item.id, disabled: item.checked });
 
-  async function handleDelete() {
-    setDeleting(true);
-    try {
-      await onDelete();
-    } finally {
-      setDeleting(false);
-    }
-  }
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 bg-white rounded-2xl shadow-sm border border-gray-100 transition-opacity ${
-        dimmed ? "opacity-40" : ""
-      } ${item.checked ? "opacity-60" : ""}`}
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-2 px-3 py-3 bg-white rounded-2xl shadow-sm border border-gray-100 transition-opacity ${
+        isDragging ? "opacity-50 shadow-lg z-10 relative" : ""
+      } ${dimmed ? "opacity-40" : ""} ${item.checked ? "opacity-60" : ""}`}
     >
+      {/* Drag handle — only for unchecked items */}
+      {!item.checked ? (
+        <button
+          {...attributes}
+          {...listeners}
+          className="flex-shrink-0 p-1 text-gray-300 hover:text-gray-400 touch-none cursor-grab active:cursor-grabbing"
+          aria-label="Drag to reorder"
+          tabIndex={-1}
+        >
+          <GripVertical size={15} />
+        </button>
+      ) : (
+        <div className="w-6 flex-shrink-0" />
+      )}
+
       {/* Checkbox */}
       <button
-        onClick={() => onToggle(!item.checked)}
+        onClick={(e) => { e.stopPropagation(); onToggle(!item.checked); }}
         className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors"
         style={{
           borderColor: item.checked ? "#FF6B6B" : "#d1d5db",
           backgroundColor: item.checked ? "#FF6B6B" : "transparent",
         }}
-        aria-label={item.checked ? "Uncheck item" : "Check item"}
+        aria-label={item.checked ? "Uncheck" : "Check"}
       >
         {item.checked && (
           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -55,8 +70,8 @@ export default function ShoppingItemRow({
         )}
       </button>
 
-      {/* Item info */}
-      <div className="flex-1 min-w-0">
+      {/* Item body — tapping anywhere here opens the detail/edit modal */}
+      <div className="flex-1 min-w-0 py-0.5" onClick={onEdit} role="button" tabIndex={0}>
         <div className="flex items-center gap-2 flex-wrap">
           <span
             className={`text-sm font-medium ${
@@ -66,19 +81,15 @@ export default function ShoppingItemRow({
             {item.name}
           </span>
           {item.urgent && !item.checked && (
-            <span className="inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">
+            <span className="inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 flex-shrink-0">
               <AlertCircle size={10} />
               Urgent
             </span>
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          {item.brand && (
-            <span className="text-xs text-gray-400">{item.brand}</span>
-          )}
-          {item.quantity && (
-            <span className="text-xs text-gray-400">× {item.quantity}</span>
-          )}
+          {item.brand && <span className="text-xs text-gray-400">{item.brand}</span>}
+          {item.quantity && <span className="text-xs text-gray-400">× {item.quantity}</span>}
           {item.section && (
             <span className="text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-md">
               {item.section}
@@ -93,24 +104,14 @@ export default function ShoppingItemRow({
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 flex-shrink-0">
-        <button
-          onClick={onEdit}
-          className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg"
-          aria-label="Edit item"
-        >
-          <Pencil size={14} />
-        </button>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-lg disabled:opacity-40"
-          aria-label="Delete item"
-        >
-          <Trash2 size={14} />
-        </button>
-      </div>
+      {/* Delete */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        className="flex-shrink-0 p-1.5 text-gray-300 hover:text-red-400 transition-colors rounded-lg"
+        aria-label="Delete item"
+      >
+        <Trash2 size={14} />
+      </button>
     </div>
   );
 }

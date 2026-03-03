@@ -18,6 +18,7 @@ export interface MemberProfile {
   theme: ThemeKey;
   colour: string;
   viewMode: ViewMode;
+  textSize?: "sm" | "md" | "lg";
   createdAt: Timestamp;
 }
 
@@ -32,6 +33,7 @@ export interface Household {
   createdBy: string;
   createdAt: Timestamp;
   calendarEmail?: string;
+  mealSlots?: string[];
 }
 
 // Invite document at /households/{hid}/invites/{token}
@@ -57,6 +59,7 @@ export interface ShoppingItem {
   createdAt: Timestamp;
   urgent?: boolean;
   onlyAtStoreId?: string | null;
+  sortOrder?: number;
 }
 
 // Item memory at /households/{hid}/itemMemory/{normalisedName}

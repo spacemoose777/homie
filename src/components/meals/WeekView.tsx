@@ -8,6 +8,7 @@ interface WeekViewProps {
   meals: Meal[];
   weekPlan: WeekPlan | null;
   weekStart: Date;
+  mealSlots: string[];
   onWeekChange: (date: Date) => void;
   onPickMeal: (date: string, slot: keyof DayPlan) => void;
   onClearSlot: (date: string, slot: keyof DayPlan) => void;
@@ -24,6 +25,7 @@ export default function WeekView({
   meals,
   weekPlan,
   weekStart,
+  mealSlots,
   onWeekChange,
   onPickMeal,
   onClearSlot,
@@ -31,6 +33,7 @@ export default function WeekView({
   const today = new Date();
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const mealMap = new Map(meals.map((m) => [m.id, m]));
+  const activeSlots = SLOTS.filter((s) => mealSlots.includes(s.key));
 
   function getMealName(id: string | null): string | null {
     if (!id) return null;
@@ -111,7 +114,7 @@ export default function WeekView({
 
               {/* Slots */}
               <div className="divide-y divide-gray-50">
-                {SLOTS.map(({ key, label }) => {
+                {activeSlots.map(({ key, label }) => {
                   const mealId = dayPlan[key];
                   const mealName = getMealName(mealId);
 

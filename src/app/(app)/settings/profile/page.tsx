@@ -8,6 +8,7 @@ import {
   updateMemberName,
   updateMemberColour,
   updateMemberTheme,
+  updateMemberTextSize,
 } from "@/lib/firebase/firestore";
 import type { ThemeKey } from "@/types";
 
@@ -29,6 +30,7 @@ export default function ProfileSettingsPage() {
   const [name, setName] = useState("");
   const [colour, setColour] = useState("#FF6B6B");
   const [theme, setTheme] = useState<ThemeKey>("petal");
+  const [textSize, setTextSize] = useState<"sm" | "md" | "lg">("md");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -37,6 +39,7 @@ export default function ProfileSettingsPage() {
       setName(memberProfile.name);
       setColour(memberProfile.colour);
       setTheme(memberProfile.theme);
+      setTextSize(memberProfile.textSize ?? "md");
     }
   }, [memberProfile]);
 
@@ -52,6 +55,9 @@ export default function ProfileSettingsPage() {
       }
       if (theme !== memberProfile?.theme) {
         await updateMemberTheme(householdId, user.uid, theme);
+      }
+      if (textSize !== (memberProfile?.textSize ?? "md")) {
+        await updateMemberTextSize(householdId, user.uid, textSize);
       }
       await refreshProfile();
       setSaved(true);
@@ -134,6 +140,26 @@ export default function ProfileSettingsPage() {
               {theme === key && <Check size={16} style={{ color: "#FF6B6B" }} />}
             </button>
           ))}
+        </div>
+
+        {/* Text size */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <p className="px-4 pt-4 pb-2 text-sm font-medium text-gray-700">Text size</p>
+          {(["sm", "md", "lg"] as const).map((size, i) => {
+            const labels = { sm: "Small", md: "Medium", lg: "Large" };
+            return (
+              <button
+                key={size}
+                onClick={() => setTextSize(size)}
+                className={`w-full flex items-center justify-between px-4 py-3 hover:bg-rose-50 transition-colors ${
+                  i < 2 ? "border-b border-gray-100" : ""
+                }`}
+              >
+                <span className="text-sm text-gray-700">{labels[size]}</span>
+                {textSize === size && <Check size={16} style={{ color: "#FF6B6B" }} />}
+              </button>
+            );
+          })}
         </div>
 
         {/* Save */}

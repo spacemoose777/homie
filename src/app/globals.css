@@ -2,30 +2,109 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-gradient-to-br from-rose-50 via-white to-sky-50 min-h-screen;
-  color: #1a1a2e;
-  font-family: Inter, system-ui, sans-serif;
+/* ── Theme variables ─────────────────────────────────────────────────────── */
+:root {
+  --bg-app: linear-gradient(135deg, #fff1f2 0%, #ffffff 50%, #e0f2fe 100%);
+  --bg-card: #ffffff;
+  --bg-hover: #fdf2f2;
+  --bg-input: #ffffff;
+  --border: #f3f4f6;
+  --border-input: #e5e7eb;
+  --text-1: #1a1a2e;
+  --text-2: #6b7280;
+  --text-3: #9ca3af;
 }
 
-/* Smooth scrolling */
+[data-theme="sky"] {
+  --bg-app: linear-gradient(135deg, #e0f2fe 0%, #ffffff 50%, #dbeafe 100%);
+  --bg-card: #ffffff;
+  --bg-hover: #f0f9ff;
+  --bg-input: #ffffff;
+  --border: #e0f2fe;
+  --border-input: #bae6fd;
+  --text-1: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+}
+
+[data-theme="midnight"] {
+  --bg-app: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #0d0d1f 100%);
+  --bg-card: #1e1e2e;
+  --bg-hover: #252538;
+  --bg-input: #252538;
+  --border: #2d2d44;
+  --border-input: #3d3d5c;
+  --text-1: #f1f5f9;
+  --text-2: #94a3b8;
+  --text-3: #64748b;
+}
+
+[data-theme="slate"] {
+  --bg-app: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  --bg-card: #1e293b;
+  --bg-hover: #263348;
+  --bg-input: #263348;
+  --border: #334155;
+  --border-input: #475569;
+  --text-1: #f8fafc;
+  --text-2: #94a3b8;
+  --text-3: #64748b;
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg-app);
+  color: var(--text-1);
+  font-family: Inter, system-ui, sans-serif;
 }
 
 /* Remove tap highlight on mobile */
 * {
   -webkit-tap-highlight-color: transparent;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
-/* Custom scrollbar for webkit */
-::-webkit-scrollbar {
-  width: 4px;
+/* ── Theme class overrides ───────────────────────────────────────────────── */
+/* These override Tailwind utility classes so every card/surface picks up
+   the current theme without touching each component. */
+
+.bg-white   { background-color: var(--bg-card)  !important; }
+.bg-gray-50 { background-color: var(--bg-hover) !important; }
+
+.border-gray-100 { border-color: var(--border)       !important; }
+.border-gray-200 { border-color: var(--border-input)  !important; }
+
+.text-gray-900 { color: var(--text-1) !important; }
+.text-gray-800 { color: var(--text-1) !important; }
+.text-gray-700 { color: var(--text-2) !important; }
+.text-gray-600 { color: var(--text-2) !important; }
+.text-gray-500 { color: var(--text-2) !important; }
+.text-gray-400 { color: var(--text-3) !important; }
+.text-gray-300 { color: var(--text-3) !important; }
+
+input, select, textarea {
+  background-color: var(--bg-input)    !important;
+  color:            var(--text-1)      !important;
+  border-color:     var(--border-input) !important;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+
+/* Fix placeholder text in dark mode */
+input::placeholder, textarea::placeholder {
+  color: var(--text-3) !important;
 }
-::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
-  border-radius: 2px;
-}
+
+/* ── Font size ───────────────────────────────────────────────────────────── */
+html[data-textsize="sm"] { font-size: 14px; }
+html[data-textsize="md"] { font-size: 16px; }
+html[data-textsize="lg"] { font-size: 18px; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 2px; }

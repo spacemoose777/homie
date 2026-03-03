@@ -8,12 +8,13 @@ import {
   subscribeToMeals,
   subscribeToWeekPlan,
   subscribeToShoppingItems,
+  subscribeToHousehold,
   addMeal,
   updateMeal,
   deleteMeal,
   updateDaySlot,
 } from "@/lib/firebase/firestore";
-import type { Meal, WeekPlan, DayPlan, ShoppingItem } from "@/types";
+import type { Meal, WeekPlan, DayPlan, ShoppingItem, Household } from "@/types";
 import WeekView from "@/components/meals/WeekView";
 import MealPickerModal from "@/components/meals/MealPickerModal";
 import MealEditModal from "@/components/meals/MealEditModal";
@@ -26,6 +27,7 @@ export default function MealsPage() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [weekPlan, setWeekPlan] = useState<WeekPlan | null>(null);
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
+  const [household, setHousehold] = useState<Household | null>(null);
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
@@ -52,6 +54,14 @@ export default function MealsPage() {
     const unsub = subscribeToShoppingItems(householdId, setShoppingItems);
     return () => unsub();
   }, [householdId]);
+
+  useEffect(() => {
+    if (!householdId) return;
+    const unsub = subscribeToHousehold(householdId, setHousehold);
+    return () => unsub();
+  }, [householdId]);
+
+  const mealSlots = household?.mealSlots ?? ["dinner"];
 
   async function handlePickMeal(mealId: string) {
     if (!householdId || !slotTarget) return;
@@ -112,6 +122,7 @@ export default function MealsPage() {
         meals={meals}
         weekPlan={weekPlan}
         weekStart={weekStart}
+        mealSlots={mealSlots}
         onWeekChange={setWeekStart}
         onPickMeal={(date, slot) => setSlotTarget({ date, slot })}
         onClearSlot={handleClearSlot}

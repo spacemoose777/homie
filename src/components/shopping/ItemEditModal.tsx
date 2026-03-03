@@ -1,23 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { X, AlertCircle } from "lucide-react";
 import type { ShoppingItem, Store } from "@/types";
 
 interface ItemEditModalProps {
   item: ShoppingItem | null;
   stores: Store[];
+  knownSections: string[];
   onSave: (updates: Partial<Omit<ShoppingItem, "id" | "createdAt" | "addedBy">>) => void;
   onClose: () => void;
 }
 
-const SECTIONS = [
+const PRESET_SECTIONS = [
   "Produce", "Meat & Seafood", "Dairy & Eggs", "Bread & Bakery",
   "Pantry", "Frozen", "Beverages", "Snacks", "Cleaning", "Personal Care",
   "Baby", "Pet", "Other",
 ];
 
-export default function ItemEditModal({ item, stores, onSave, onClose }: ItemEditModalProps) {
+export default function ItemEditModal({ item, stores, knownSections, onSave, onClose }: ItemEditModalProps) {
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
   const [brandBackup, setBrandBackup] = useState("");
@@ -40,12 +42,15 @@ export default function ItemEditModal({ item, stores, onSave, onClose }: ItemEdi
 
   if (!item) return null;
 
+  // Combine presets + any custom sections already in use
+  const allSections = [...new Set([...PRESET_SECTIONS, ...knownSections])].sort();
+
   function handleSave() {
     onSave({
       name: name.trim() || item!.name,
       brand: brand.trim() || null,
       brandBackup: brandBackup.trim() || null,
-      section: section || null,
+      section: section.trim() || null,
       quantity: quantity.trim() || null,
       urgent,
       onlyAtStoreId: onlyAtStoreId || null,
@@ -103,20 +108,25 @@ export default function ItemEditModal({ item, stores, onSave, onClose }: ItemEdi
             </div>
           </div>
 
-          {/* Section */}
+          {/* Category — free text with suggestions from datalist */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category / Section</label>
-            <select
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <input
+              type="text"
+              list="section-suggestions"
               value={section}
               onChange={(e) => setSection(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 transition-colors"
+              placeholder="e.g. Produce, Dairy — or type a new one"
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-colors"
               style={{ "--tw-ring-color": "#FF6B6B33" } as React.CSSProperties}
-            >
-              <option value="">— None —</option>
-              {SECTIONS.map((s) => (
-                <option key={s} value={s}>{s}</option>
+            />
+            <datalist id="section-suggestions">
+              {allSections.map((s) => (
+                <option key={s} value={s} />
               ))}
-            </select>
+            </datalist>
           </div>
 
           {/* Quantity */}
@@ -140,7 +150,7 @@ export default function ItemEditModal({ item, stores, onSave, onClose }: ItemEdi
             </span>
             <div
               onClick={() => setUrgent(!urgent)}
-              className="relative w-11 h-6 rounded-full transition-colors cursor-pointer"
+              className="relative w-11 h-6 rounded-full transition-colors cursor-pointer flex-shrink-0"
               style={{ backgroundColor: urgent ? "#FF6B6B" : "#d1d5db" }}
             >
               <div
@@ -151,22 +161,29 @@ export default function ItemEditModal({ item, stores, onSave, onClose }: ItemEdi
           </label>
 
           {/* Only at store */}
-          {stores.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Only at store</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Only available at</label>
+            {stores.length > 0 ? (
               <select
                 value={onlyAtStoreId}
                 onChange={(e) => setOnlyAtStoreId(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 transition-colors"
                 style={{ "--tw-ring-color": "#FF6B6B33" } as React.CSSProperties}
               >
-                <option value="">— Any store —</option>
+                <option value="">— Available anywhere —</option>
                 {stores.map((store) => (
                   <option key={store.id} value={store.id}>{store.name}</option>
                 ))}
               </select>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-gray-400 py-2">
+                <Link href="/settings/stores" className="underline" style={{ color: "#FF6B6B" }}>
+                  Add stores in Settings
+                </Link>{" "}
+                to tag items as store-specific.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Footer */}

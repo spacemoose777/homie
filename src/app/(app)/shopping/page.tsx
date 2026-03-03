@@ -12,6 +12,7 @@ import {
   deleteShoppingItem,
   clearCompletedItems,
   loadAllItemMemory,
+  updateShoppingItemSortOrder,
 } from "@/lib/firebase/firestore";
 import type { ShoppingItem, Store, ItemMemory } from "@/types";
 import ShoppingList from "@/components/shopping/ShoppingList";
@@ -31,7 +32,6 @@ export default function ShoppingPage() {
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [showStartShopping, setShowStartShopping] = useState(false);
 
-  // Subscriptions
   useEffect(() => {
     if (!householdId) return;
     const unsub = subscribeToShoppingItems(householdId, setItems);
@@ -49,16 +49,31 @@ export default function ShoppingPage() {
     loadAllItemMemory(householdId).then(setMemory);
   }, [householdId]);
 
-  // Extract distinct sections from items
-  const sections = useMemo(() => {
+  // Distinct categories already in use — passed to ItemEditModal so users
+  // can pick from their own custom categories as well as the presets
+  const knownSections = useMemo(() => {
     const s = new Set(items.map((i) => i.section).filter(Boolean) as string[]);
     return [...s].sort();
   }, [items]);
 
+  // Sections used in the list — drives the FilterBar chips
+  const sections = knownSections;
+
   const checkedCount = items.filter((i) => i.checked).length;
+
+  // Helper: lowest sort order among unchecked items
+  function minUncheckedOrder(): number {
+    const unchecked = items.filter((i) => !i.checked);
+    if (unchecked.length === 0) return 0;
+    return Math.min(
+      ...unchecked.map((i) => i.sortOrder ?? -i.createdAt.toMillis())
+    );
+  }
 
   async function handleAdd(name: string) {
     if (!householdId || !user) return;
+    // New items go to the TOP — give them a sortOrder below the current minimum
+    const sortOrder = minUncheckedOrder() - 1000;
     await addShoppingItem(householdId, {
       name,
       brand: null,
@@ -69,6 +84,7 @@ export default function ShoppingPage() {
       addedBy: user.uid,
       urgent: false,
       onlyAtStoreId: null,
+      sortOrder,
     });
   }
 
@@ -86,6 +102,12 @@ export default function ShoppingPage() {
     updates: Partial<Omit<ShoppingItem, "id" | "createdAt" | "addedBy">>
   ) {
     if (!householdId || !editingItem) return;
+
+    // If urgency is being turned ON, jump the item to the top of the list
+    if (updates.urgent === true && !editingItem.urgent) {
+      updates.sortOrder = minUncheckedOrder() - 1000;
+    }
+
     await updateShoppingItem(householdId, editingItem.id, updates);
   }
 
@@ -94,8 +116,9 @@ export default function ShoppingPage() {
     await clearCompletedItems(householdId);
   }
 
-  function handleStartShopping(store: Store | null) {
-    setActiveStore(store);
+  async function handleReorder(itemId: string, newSortOrder: number) {
+    if (!householdId) return;
+    await updateShoppingItemSortOrder(householdId, itemId, newSortOrder);
   }
 
   return (
@@ -135,10 +158,7 @@ export default function ShoppingPage() {
           <p className="text-sm font-medium" style={{ color: "#FF6B6B" }}>
             Shopping at <strong>{activeStore.name}</strong>
           </p>
-          <button
-            onClick={() => setActiveStore(null)}
-            className="text-xs text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={() => setActiveStore(null)} className="text-xs text-gray-400 hover:text-gray-600">
             Stop
           </button>
         </div>
@@ -172,6 +192,7 @@ export default function ShoppingPage() {
         onToggle={handleToggle}
         onDelete={handleDelete}
         onEdit={setEditingItem}
+        onReorder={handleReorder}
       />
 
       {/* Modals */}
@@ -179,6 +200,7 @@ export default function ShoppingPage() {
         <ItemEditModal
           item={editingItem}
           stores={stores}
+          knownSections={knownSections}
           onSave={handleEditSave}
           onClose={() => setEditingItem(null)}
         />
@@ -187,7 +209,7 @@ export default function ShoppingPage() {
       {showStartShopping && (
         <StartShoppingModal
           stores={stores}
-          onStart={handleStartShopping}
+          onStart={(store) => setActiveStore(store)}
           onClose={() => setShowStartShopping(false)}
         />
       )}

@@ -86,6 +86,19 @@ export async function updateHouseholdCalendarEmail(householdId: string, email: s
   await updateDoc(doc(db, "households", householdId), { calendarEmail: email });
 }
 
+export function subscribeToHousehold(
+  householdId: string,
+  callback: (household: import("@/types").Household) => void
+) {
+  return onSnapshot(doc(db, "households", householdId), (snap) => {
+    if (snap.exists()) callback(snap.data() as import("@/types").Household);
+  });
+}
+
+export async function updateHouseholdMealSlots(householdId: string, mealSlots: string[]) {
+  await updateDoc(doc(db, "households", householdId), { mealSlots });
+}
+
 // ── Member Profile ──
 
 export async function getMemberProfile(
@@ -110,6 +123,10 @@ export async function updateMemberTheme(householdId: string, uid: string, theme:
 
 export async function updateMemberViewMode(householdId: string, uid: string, viewMode: ViewMode) {
   await updateDoc(doc(db, "households", householdId, "members", uid), { viewMode });
+}
+
+export async function updateMemberTextSize(householdId: string, uid: string, textSize: "sm" | "md" | "lg") {
+  await updateDoc(doc(db, "households", householdId, "members", uid), { textSize });
 }
 
 // ── Household Members ──
@@ -254,6 +271,10 @@ export async function updateShoppingItem(
 
 export async function toggleShoppingItem(householdId: string, itemId: string, checked: boolean) {
   await updateDoc(doc(db, "households", householdId, "shoppingItems", itemId), { checked });
+}
+
+export async function updateShoppingItemSortOrder(householdId: string, itemId: string, sortOrder: number) {
+  await updateDoc(doc(db, "households", householdId, "shoppingItems", itemId), { sortOrder });
 }
 
 export async function deleteShoppingItem(householdId: string, itemId: string) {
