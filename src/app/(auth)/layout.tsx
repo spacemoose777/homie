@@ -7,14 +7,17 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, householdId, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
+    // Wait for both user AND householdId before redirecting.
+    // This prevents the layout from firing a redirect mid-signUp, before
+    // joinHousehold/createHousehold has finished writing to Firestore.
+    if (!loading && user && householdId) {
       router.replace("/shopping");
     }
-  }, [user, loading, router]);
+  }, [user, householdId, loading, router]);
 
   if (loading) {
     return (
@@ -24,7 +27,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
-  if (user) return null;
+  if (user && householdId) return null;
 
   return <>{children}</>;
 }

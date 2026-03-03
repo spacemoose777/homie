@@ -94,6 +94,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           result.invite.role as UserRole
         );
         await markInviteUsed(result.householdId, inviteToken);
+
+        // Reload so client state reflects the joined household immediately.
+        await loadHouseholdData(signedInUser);
       }
 
       return { error: null };
@@ -132,6 +135,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Create new household
         await createHousehold(newUser.uid, email, displayName);
       }
+
+      // Reload household data now that Firestore writes are complete.
+      // onAuthStateChanged fires before these writes finish, so we must
+      // explicitly sync after sign-up.
+      await loadHouseholdData(newUser);
 
       return { error: null };
     } catch (err: unknown) {
