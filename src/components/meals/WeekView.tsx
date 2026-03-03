@@ -96,9 +96,8 @@ export default function WeekView({
             >
               {/* Day header */}
               <div
-                className={`px-4 py-2.5 flex items-center justify-between ${
-                  isToday ? "bg-rose-50" : "bg-gray-50/50"
-                }`}
+                className={`px-4 py-2.5 flex items-center justify-between ${isToday ? "" : "bg-gray-50"}`}
+                style={isToday ? { backgroundColor: "rgba(255, 107, 107, 0.15)" } : undefined}
               >
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-gray-900">{format(day, "EEEE")}</span>
