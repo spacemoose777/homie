@@ -61,7 +61,7 @@ export default function ShoppingItemRow({
         {...attributes}
         {...listeners}
         className="flex-1 min-w-0 py-0.5 select-none"
-        style={{ touchAction: item.checked ? "auto" : "none" }}
+        style={{ touchAction: item.checked ? "auto" : "pan-y" }}
         onClick={onEdit}
         role="button"
         tabIndex={0}
