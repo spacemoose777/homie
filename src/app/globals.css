@@ -100,9 +100,44 @@ input::placeholder, textarea::placeholder {
 }
 
 /* ── Font size ───────────────────────────────────────────────────────────── */
-html[data-textsize="sm"] { font-size: 14px; }
-html[data-textsize="md"] { font-size: 16px; }
-html[data-textsize="lg"] { font-size: 18px; }
+/* Only Tailwind text-* utility classes are resized — NOT rem-based layout   */
+/* values (padding, gap, width). This prevents the page from "zooming" when  */
+/* the user changes their preferred text size.                                */
+:root {
+  --text-xs:   12px;
+  --text-sm:   14px;
+  --text-base: 16px;
+  --text-lg:   18px;
+  --text-xl:   20px;
+  --text-2xl:  24px;
+  --text-3xl:  30px;
+}
+html[data-textsize="sm"] {
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-base: 14px;
+  --text-lg:   16px;
+  --text-xl:   18px;
+  --text-2xl:  20px;
+  --text-3xl:  24px;
+}
+/* md matches :root defaults — no overrides needed */
+html[data-textsize="lg"] {
+  --text-xs:   13px;
+  --text-sm:   16px;
+  --text-base: 18px;
+  --text-lg:   20px;
+  --text-xl:   22px;
+  --text-2xl:  28px;
+  --text-3xl:  34px;
+}
+.text-xs   { font-size: var(--text-xs)   !important; }
+.text-sm   { font-size: var(--text-sm)   !important; }
+.text-base { font-size: var(--text-base) !important; }
+.text-lg   { font-size: var(--text-lg)   !important; }
+.text-xl   { font-size: var(--text-xl)   !important; }
+.text-2xl  { font-size: var(--text-2xl)  !important; }
+.text-3xl  { font-size: var(--text-3xl)  !important; }
 
 /* ── Scrollbar ───────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 4px; }
