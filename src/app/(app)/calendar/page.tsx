@@ -15,11 +15,9 @@ import {
 import type { CalendarEvent, MemberProfile, Meal, WeekPlan } from "@/types";
 import {
   expandEventsForRange,
-  getOccurrencesForDay,
   getDatesWithEvents,
 } from "@/lib/recurring";
 import WeekStrip from "@/components/calendar/WeekStrip";
-import DayEventList from "@/components/calendar/DayEventList";
 import ScheduleView from "@/components/calendar/ScheduleView";
 import CalendarWeekView from "@/components/calendar/CalendarWeekView";
 import MonthView from "@/components/calendar/MonthView";
@@ -83,11 +81,6 @@ export default function CalendarPage() {
     }
     return { occurrences: occ, datesWithEvents: dates };
   }, [events, weekStart, weekPlan]);
-
-  const dayOccurrences = useMemo(
-    () => getOccurrencesForDay(occurrences, format(selectedDate, "yyyy-MM-dd")),
-    [occurrences, selectedDate]
-  );
 
   // Meal entries for the selected day
   const mealEntries = useMemo(() => {
@@ -175,27 +168,15 @@ export default function CalendarPage() {
         ))}
       </div>
 
-      {/* Schedule view — week strip + day detail */}
+      {/* Schedule view — vertical scroll through all days with events */}
       {viewMode === "schedule" && (
-        <>
-          <div className="mb-4">
-            <WeekStrip
-              weekStart={weekStart}
-              selectedDate={selectedDate}
-              datesWithEvents={datesWithEvents}
-              onSelectDate={setSelectedDate}
-              onWeekChange={(w) => { setWeekStart(w); }}
-            />
-          </div>
-          <DayEventList
-            occurrences={dayOccurrences}
-            mealEntries={mealEntries}
-            members={members}
-            selectedDate={selectedDate}
-            onAddEvent={() => { setEditingEvent(null); setShowEventModal(true); }}
-            onEditEvent={handleEditEvent}
-          />
-        </>
+        <ScheduleView
+          occurrences={occurrences}
+          mealEntries={mealEntries}
+          members={members}
+          selectedDate={selectedDate}
+          onEditEvent={handleEditEvent}
+        />
       )}
 
       {/* Week view — 7-day row list */}

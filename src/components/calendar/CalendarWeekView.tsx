@@ -27,81 +27,69 @@ export default function CalendarWeekView({
 }: CalendarWeekViewProps) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  function getItemsForDay(date: Date) {
-    const isoDate = format(date, "yyyy-MM-dd");
-    const events = occurrences.filter((o) => o.occurrenceDate === isoDate);
-    const meals = isSameDay(date, selectedDate) ? mealEntries : [];
-    return { events, meals };
-  }
-
   return (
-    <div className="space-y-2">
-      {days.map((day) => {
-        const { events, meals } = getItemsForDay(day);
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      {days.map((day, idx) => {
+        const isoDate = format(day, "yyyy-MM-dd");
         const todayDay = isToday(day);
         const selected = isSameDay(day, selectedDate);
-        const hasItems = events.length > 0 || meals.length > 0;
+        const dayEvents = occurrences.filter((o) => o.occurrenceDate === isoDate);
+        const dayMeals = isSameDay(day, selectedDate) ? mealEntries : [];
+        const isLast = idx === 6;
 
         return (
           <div
-            key={format(day, "yyyy-MM-dd")}
-            className={`bg-white rounded-2xl border overflow-hidden ${selected ? "shadow-md" : "shadow-sm"}`}
-            style={{ borderColor: todayDay ? "#FF6B6B" : selected ? "#FFB3B3" : "#f3f4f6" }}
+            key={isoDate}
+            className={`flex items-center gap-3 px-4 py-3 transition-colors cursor-pointer ${
+              isLast ? "" : "border-b border-gray-50"
+            } ${selected ? "bg-rose-50" : "hover:bg-gray-50"}`}
+            onClick={() => onSelectDate(day)}
           >
-            {/* Day header */}
-            <button
-              onClick={() => onSelectDate(day)}
-              className={`w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors ${
-                selected ? "bg-rose-50" : todayDay ? "bg-orange-50" : "bg-gray-50/50"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-sm text-gray-900">{format(day, "EEE")}</span>
-                <span
-                  className="text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full"
-                  style={todayDay ? { backgroundColor: "#FF6B6B", color: "white" } : { color: "#6b7280" }}
+            {/* Day label */}
+            <div className="w-14 flex-shrink-0">
+              <p className="text-xs font-medium text-gray-400 uppercase">{format(day, "EEE")}</p>
+              <span
+                className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold mt-0.5 ${
+                  todayDay ? "text-white" : selected ? "text-rose-600" : "text-gray-900"
+                }`}
+                style={todayDay ? { backgroundColor: "#FF6B6B" } : undefined}
+              >
+                {format(day, "d")}
+              </span>
+            </div>
+
+            {/* Event chips */}
+            <div className="flex-1 flex flex-wrap gap-1 min-w-0">
+              {dayEvents.length === 0 && dayMeals.length === 0 && (
+                <span className="text-xs text-gray-200">—</span>
+              )}
+              {dayEvents.slice(0, 3).map((occ) => (
+                <button
+                  key={occ.event.id}
+                  onClick={(e) => { e.stopPropagation(); onEditEvent(occ.event); }}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium truncate max-w-[140px]"
+                  style={{
+                    backgroundColor: (occ.event.colour || "#FF6B6B") + "22",
+                    color: occ.event.colour || "#FF6B6B",
+                  }}
                 >
-                  {format(day, "d")}
+                  {occ.event.title}
+                </button>
+              ))}
+              {dayMeals.map((entry) => (
+                <span
+                  key={`${entry.mealId}-${entry.slot}`}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium text-orange-600 bg-orange-50"
+                >
+                  {entry.mealName}
                 </span>
-              </div>
-              {hasItems && (
-                <span className="text-xs text-gray-400">
-                  {events.length + meals.length} item{events.length + meals.length !== 1 ? "s" : ""}
+              ))}
+              {dayEvents.length > 3 && (
+                <span className="text-[11px] text-gray-400 self-center">
+                  +{dayEvents.length - 3}
                 </span>
               )}
-            </button>
-
-            {/* Events for this day */}
-            {hasItems && (
-              <div className="px-3 py-2 space-y-1">
-                {events.map((occ) => (
-                  <button
-                    key={`${occ.event.id}-${occ.occurrenceDate}`}
-                    onClick={() => onEditEvent(occ.event)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 text-left transition-colors"
-                  >
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: occ.event.colour || "#FF6B6B" }} />
-                    <span className="text-xs font-medium text-gray-800 truncate flex-1">{occ.event.title}</span>
-                    {!occ.event.allDay && (
-                      <span className="text-[10px] text-gray-400 flex-shrink-0">
-                        {format(occ.event.startDate.toDate(), "h:mm a")}
-                      </span>
-                    )}
-                    {occ.event.allDay && <span className="text-[10px] text-gray-400 flex-shrink-0">All day</span>}
-                  </button>
-                ))}
-                {meals.map((entry) => (
-                  <div
-                    key={`meal-${entry.mealId}-${entry.slot}`}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
-                  >
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: "#F97316" }} />
-                    <span className="text-xs font-medium text-gray-800 truncate flex-1">{entry.mealName}</span>
-                    <span className="text-[10px] text-orange-400 flex-shrink-0">{entry.slot}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            </div>
           </div>
         );
       })}
