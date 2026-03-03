@@ -49,7 +49,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen">
       <Sidebar />
       {/* Main content area — offset by sidebar on desktop */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 md:ml-64 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
         <main className="flex-1 pb-20 md:pb-0">{children}</main>
       </div>
       <BottomNav />
