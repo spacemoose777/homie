@@ -12,6 +12,7 @@ interface WeekViewProps {
   onWeekChange: (date: Date) => void;
   onPickMeal: (date: string, slot: keyof DayPlan) => void;
   onClearSlot: (date: string, slot: keyof DayPlan) => void;
+  onMealTap: (mealId: string, date: string, slot: keyof DayPlan) => void;
 }
 
 const SLOTS: { key: keyof DayPlan; label: string }[] = [
@@ -29,6 +30,7 @@ export default function WeekView({
   onWeekChange,
   onPickMeal,
   onClearSlot,
+  onMealTap,
 }: WeekViewProps) {
   const today = new Date();
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -68,7 +70,7 @@ export default function WeekView({
             className="text-xs mt-0.5"
             style={{ color: "#FF6B6B" }}
           >
-            Today
+            Today · {format(today, "EEE d MMM")}
           </button>
         </div>
         <button
@@ -121,12 +123,18 @@ export default function WeekView({
                   return (
                     <div key={key} className="flex items-center gap-3 px-4 py-2.5">
                       <span className="text-xs text-gray-400 w-16 flex-shrink-0">{label}</span>
-                      {mealName ? (
+                      {mealName && mealId ? (
                         <div className="flex-1 flex items-center justify-between">
-                          <span className="text-sm text-gray-700 font-medium">{mealName}</span>
+                          {/* Tap meal name → open detail/action sheet */}
+                          <button
+                            onClick={() => onMealTap(mealId, isoDate, key)}
+                            className="flex-1 text-left text-sm text-gray-700 font-medium hover:text-gray-900 transition-colors"
+                          >
+                            {mealName}
+                          </button>
                           <button
                             onClick={() => onClearSlot(isoDate, key)}
-                            className="p-1 text-gray-300 hover:text-red-400 transition-colors"
+                            className="p-1 text-gray-300 hover:text-red-400 transition-colors ml-2"
                           >
                             <X size={12} />
                           </button>

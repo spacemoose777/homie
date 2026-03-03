@@ -22,9 +22,9 @@ export default function WeekStrip({
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-2 py-3">
       {/* Month + nav */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2 px-1">
         <button
           onClick={() => onWeekChange(subWeeks(weekStart, 1))}
           className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
@@ -42,8 +42,8 @@ export default function WeekStrip({
         </button>
       </div>
 
-      {/* Day columns */}
-      <div className="grid grid-cols-7 gap-1">
+      {/* Day columns — use min-w-0 + equal-width flex to avoid overflow */}
+      <div className="grid grid-cols-7 gap-0.5">
         {days.map((day) => {
           const isoDate = format(day, "yyyy-MM-dd");
           const isToday = isSameDay(day, today);
@@ -54,7 +54,7 @@ export default function WeekStrip({
             <button
               key={isoDate}
               onClick={() => onSelectDate(day)}
-              className="flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-colors"
+              className="flex flex-col items-center gap-0.5 py-2 rounded-xl transition-colors min-w-0"
               style={{
                 backgroundColor: isSelected ? "#FF6B6B" : isToday ? "#FFF0F0" : "transparent",
               }}

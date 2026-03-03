@@ -46,8 +46,10 @@ export default function ShoppingList({
     [stores]
   );
 
-  // Only one pointer sensor — works for both mouse and touch
-  const sensors = useSensors(useSensor(PointerSensor));
+  // 500 ms hold activates drag; moving > 5 px during delay cancels it (allows scroll)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { delay: 500, tolerance: 5 } })
+  );
 
   const sorted = useMemo(() => {
     let filtered = [...items];

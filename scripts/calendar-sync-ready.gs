@@ -1,39 +1,16 @@
 // ================================================================
 // HOMIE CALENDAR SYNC  —  Google Apps Script
-// Paste this entire file into script.google.com (see instructions)
-//
-// What it does (runs every 5 minutes):
-//   1. Auto-accepts any pending calendar invitations sent to this
-//      Google account (jensenhomie@gmail.com)
-//   2. Syncs all calendar events into the Homie app's Firestore so
-//      they appear in the Homie calendar
-//
-// First-run setup: fill in the three values in the CONFIG block
-// below, then run syncCalendar() once manually to test.
 // ================================================================
 
-
-// ── ① FILL THESE IN ─────────────────────────────────────────────
-
 var HOUSEHOLD_ID = "uTHYPaP5RxxHdsNopfMT";
-// Find it: Firebase Console → Firestore Database → households collection
-// → click the one document → copy the document ID from the URL/breadcrumb
 
 var SERVICE_ACCOUNT_EMAIL = "firebase-adminsdk-fbsvc@homie-8d36f.iam.gserviceaccount.com";
-// Find it: Firebase Console → Project Settings (gear icon) →
-// Service Accounts tab → copy the "Service account" email shown there
 
-var PRIVATE_KEY = "  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDToKH0CQOjMmeo\nQz+LJgUIuu/PlpqR02SGdYG/eZfsCmAiC8IflWDgmeFNWIOUqO50/oPwsfE6tOqV\nUxLmsaB5RFvyxmGxcoMyryPaduH/cPiYb0PEQZTkTITRfvdYxU0eLowQCxIWsDaH\nV0r2psMcHH8ID5nZWOfUeV7JNjtH0D2FegvQiofwCjD1uous1z1+eBqEAl7m8Rxm\nasOBDCL65zc3ev9ZNtzw2j6kBlmd5BNry8m+hC6vWYqXvojdh04BBtN4sMGHhJ2C\n1eqBmVO0P4IkHtA9l9iT1gIgzkkq/9Lq96WhV5Kbhe5eDeLccbZLyO3Yz0IAfZNm\nbSGWrazJAgMBAAECggEABo/5XbAm3vlp6feV4Zp+9veXBqSoq+N2f03nBVk/qwfi\nVcPwE9sluylCaYvYXrSDWnjm/gCClruz94fxMtqou4HxaPyaXG6M33Y7YiOkG+/0\noYN3wj73X0H5L2bkxCmwG8K9QKUbPT1fH4DHOBFRRQ6kKMuVDX6ah8XwuMQYAADI\nYeuvd9iAMWKIRcNBSYDKp+Lt6pkd1Lwg+BF9wO3plc1OJMsZBPeo6PUJt3amgpSq\nLESm0WDqCla+USjqDGBTiYR+VdqZ+8sC62EwIm0wQmUd/gglo4mqTAZWVIOIipKt\naT2utfVb8/ds4qjR9n9mRPqsaNbiqvgpvaoXqH/MAQKBgQD6sPVMeKwTyOcejgYR\nK1XQXI07GEf5xgOZp83EPKX3ld0Dm+rSi/IPJdtOL8Bm8z3B3VwCuVo8JnR5sEc6\nOcffxpOyFyroreBfzYUr4FcYHvU2mTI/msp8CivJL4RmrZS9tOsEGuzsNDy/gv7s\nDTNmrLBtMpmtaY5RmkpGAx0myQKBgQDYG+ccjmLHbsDcAy2viabx6aFU8joi40Vp\nRikg2Q2EZWZq5UGH9qiOGdvd15W4kN32/kmZGcsidykRzFJ3cssP5btcSmJQF8a6\nzxgOkvvK9OJysz9+cRG4aHSL6Wa5gVPH2FkpvhYCmmGrzldZZy3WpM2QrVo0dlR6\nWP1/s8FWAQKBgQD41/tGo2o8YWp5/AStulR+dcCDboDTwOkF93nbV1BvyUUQNg8M\nXHo06yEcJW5ZQw6Eh9Szp4WYu5tWx9KMS5rJ2HX3i+O+AAr/TiTo/tG1UdWbEsq8\nNEzWf8oi9JX6zkcdYJ8A/jE77kZ22/NsIVZqjvS6EEZXyrXI7tzXTnP7cQKBgHtk\nkzVu51/QETaOaguMoVIHgCKsnB1Hf154vQsQY/NwomXuuNgVMnDQuwWUDtzveo2I\n7CUK4T2wpDaRX5Tsap2NIsmzfycULFiF3sqTikl8QcAUMPDVRrTwj3tDrW/GNDwr\nf92ht5eM5q/ehWl6zGV+fBFbqeHCnsGtBjFgRcgBAoGAeOaEZUx4YtfTE688uHpO\nXujPs/JDKKEqNXx523TmeyaPNQjvu/BHL0v04OjMhMzVWA3CcM0vOdNoV6HY2HSW\nASO7MrVYk3YHeOgL33DcYkGkYTHlnK2MLQpiTTsUKvn7Pk8jJE42SzRKru/V2/lO\noNQu9DncIYNIVTHqwHhsYRs=\n-----END PRIVATE KEY-----\n",";
-// Find it: same page as above → click "Generate new private key" →
-// open the downloaded JSON file → copy the value of the "private_key" field
-// (include the -----BEGIN/END PRIVATE KEY----- lines and the \n characters)
-
-
-// ── ② LEAVE THESE ALONE ─────────────────────────────────────────
+var PRIVATE_KEY = 'MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDToKH0CQOjMmeo\nQz+LJgUIuu/PlpqR02SGdYG/eZfsCmAiC8IflWDgmeFNWIOUqO50/oPwsfE6tOqV\nUxLmsaB5RFvyxmGxcoMyryPaduH/cPiYb0PEQZTkTITRfvdYxU0eLowQCxIWsDaH\nV0r2psMcHH8ID5nZWOfUeV7JNjtH0D2FegvQiofwCjD1uous1z1+eBqEAl7m8Rxm\nasOBDCL65zc3ev9ZNtzw2j6kBlmd5BNry8m+hC6vWYqXvojdh04BBtN4sMGHhJ2C\n1eqBmVO0P4IkHtA9l9iT1gIgzkkq/9Lq96WhV5Kbhe5eDeLccbZLyO3Yz0IAfZNm\nbSGWrazJAgMBAAECggEABo/5XbAm3vlp6feV4Zp+9veXBqSoq+N2f03nBVk/qwfi\nVcPwE9sluylCaYvYXrSDWnjm/gCClruz94fxMtqou4HxaPyaXG6M33Y7YiOkG+/0\noYN3wj73X0H5L2bkxCmwG8K9QKUbPT1fH4DHOBFRRQ6kKMuVDX6ah8XwuMQYAADI\nYeuvd9iAMWKIRcNBSYDKp+Lt6pkd1Lwg+BF9wO3plc1OJMsZBPeo6PUJt3amgpSq\nLESm0WDqCla+USjqDGBTiYR+VdqZ+8sC62EwIm0wQmUd/gglo4mqTAZWVIOIipKt\naT2utfVb8/ds4qjR9n9mRPqsaNbiqvgpvaoXqH/MAQKBgQD6sPVMeKwTyOcejgYR\nK1XQXI07GEf5xgOZp83EPKX3ld0Dm+rSi/IPJdtOL8Bm8z3B3VwCuVo8JnR5sEc6\nOcffxpOyFyroreBfzYUr4FcYHvU2mTI/msp8CivJL4RmrZS9tOsEGuzsNDy/gv7s\nDTNmrLBtMpmtaY5RmkpGAx0myQKBgQDYG+ccjmLHbsDcAy2viabx6aFU8joi40Vp\nRikg2Q2EZWZq5UGH9qiOGdvd15W4kN32/kmZGcsidykRzFJ3cssP5btcSmJQF8a6\nzxgOkvvK9OJysz9+cRG4aHSL6Wa5gVPH2FkpvhYCmmGrzldZZy3WpM2QrVo0dlR6\nWP1/s8FWAQKBgQD41/tGo2o8YWp5/AStulR+dcCDboDTwOkF93nbV1BvyUUQNg8M\nXHo06yEcJW5ZQw6Eh9Szp4WYu5tWx9KMS5rJ2HX3i+O+AAr/TiTo/tG1UdWbEsq8\nNEzWf8oi9JX6zkcdYJ8A/jE77kZ22/NsIVZqjvS6EEZXyrXI7tzXTnP7cQKBgHtk\nkzVu51/QETaOaguMoVIHgCKsnB1Hf154vQsQY/NwomXuuNgVMnDQuwWUDtzveo2I\n7CUK4T2wpDaRX5Tsap2NIsmzfycULFiF3sqTikl8QcAUMPDVRrTwj3tDrW/GNDwr\nf92ht5eM5q/ehWl6zGV+fBFbqeHCnsGtBjFgRcgBAoGAeOaEZUx4YtfTE688uHpO\nXujPs/JDKKEqNXx523TmeyaPNQjvu/BHL0v04OjMhMzVWA3CcM0vOdNoV6HY2HSW\nASO7MrVYk3YHeOgL33DcYkGkYTHlnK2MLQpiTTsUKvn7Pk8jJE42SzRKru/V2/lO\noNQu9DncIYNIVTHqwHhsYRs=';
 
 var PROJECT_ID     = "homie-8d36f";
 var SYNC_TOKEN_KEY = "homie_gcal_sync_token";
-var EVENT_COLOUR   = "#4D96FF";  // blue — visually distinct from manually-added events
+var EVENT_COLOUR   = "#4D96FF";
 
 
 // ================================================================
@@ -46,7 +23,6 @@ function syncCalendar() {
     syncEventsToFirestore();
   } catch (e) {
     Logger.log("ERROR: " + e.toString());
-    // Wipe the sync token so the next run does a clean full sync
     PropertiesService.getScriptProperties().deleteProperty(SYNC_TOKEN_KEY);
   }
 }
@@ -61,10 +37,10 @@ function acceptPendingInvitations() {
   var oneYearOn = new Date(now.getTime() + 365 * 86400000);
 
   var page = Calendar.Events.list("primary", {
-    timeMin:       now.toISOString(),
-    timeMax:       oneYearOn.toISOString(),
-    singleEvents:  true,
-    maxResults:    250,
+    timeMin:      now.toISOString(),
+    timeMax:      oneYearOn.toISOString(),
+    singleEvents: true,
+    maxResults:   250,
   });
 
   var count = 0;
@@ -90,8 +66,6 @@ function acceptPendingInvitations() {
 
 // ================================================================
 // PART 2 — Sync events to Firestore
-// Uses Google Calendar's incremental sync (syncToken) so only
-// changed events are processed after the first full run.
 // ================================================================
 
 function syncEventsToFirestore() {
@@ -101,7 +75,6 @@ function syncEventsToFirestore() {
   var newToken   = null;
 
   if (savedToken) {
-    // ── Incremental sync ──────────────────────────────────────
     try {
       var resp = Calendar.Events.list("primary", {
         syncToken:    savedToken,
@@ -112,17 +85,15 @@ function syncEventsToFirestore() {
       newToken = resp.nextSyncToken;
       Logger.log("Incremental sync: " + events.length + " change(s)");
     } catch (e) {
-      // HTTP 410 means the sync token expired — fall back to full sync
       Logger.log("Sync token expired; running full sync");
       props.deleteProperty(SYNC_TOKEN_KEY);
       syncEventsToFirestore();
       return;
     }
   } else {
-    // ── Full sync (first run or after token expiry) ───────────
-    var now     = new Date();
-    var timeMin = new Date(now.getTime() -  90 * 86400000).toISOString(); // 90 days back
-    var timeMax = new Date(now.getTime() + 365 * 86400000).toISOString(); // 1 year forward
+    var now2      = new Date();
+    var timeMin   = new Date(now2.getTime() -  90 * 86400000).toISOString();
+    var timeMax   = new Date(now2.getTime() + 365 * 86400000).toISOString();
     var pageToken = null;
 
     do {
@@ -137,8 +108,8 @@ function syncEventsToFirestore() {
 
       var page2 = Calendar.Events.list("primary", params);
       events    = events.concat(page2.items || []);
-      pageToken = page2.nextPageToken  || null;
-      newToken  = page2.nextSyncToken  || newToken;
+      pageToken = page2.nextPageToken || null;
+      newToken  = page2.nextSyncToken || newToken;
     } while (pageToken);
 
     Logger.log("Full sync: " + events.length + " event(s)");
@@ -147,8 +118,9 @@ function syncEventsToFirestore() {
   if (newToken) props.setProperty(SYNC_TOKEN_KEY, newToken);
   if (events.length === 0) return;
 
-  var token   = getFirestoreToken();
-  var upserted = 0, removed = 0;
+  var token    = getFirestoreToken();
+  var upserted = 0;
+  var removed  = 0;
 
   events.forEach(function(ev) {
     if (ev.status === "cancelled") {
@@ -173,12 +145,10 @@ function firestoreUpsert(token, ev) {
   var startMs, endMs;
 
   if (isAllDay) {
-    var sp = ev.start.date.split("-").map(Number);
-    startMs = new Date(sp[0], sp[1]-1, sp[2], 0, 0, 0).getTime();
+    var sp  = ev.start.date.split("-").map(Number);
+    startMs = new Date(sp[0], sp[1] - 1, sp[2], 0, 0, 0).getTime();
     var ep  = ev.end.date.split("-").map(Number);
-    // Google's all-day end is exclusive (the next day at midnight).
-    // Subtract 1 second to make the stored end time 23:59:59 of the real last day.
-    endMs = new Date(ep[0], ep[1]-1, ep[2], 0, 0, 0).getTime() - 1000;
+    endMs   = new Date(ep[0], ep[1] - 1, ep[2], 0, 0, 0).getTime() - 1000;
   } else {
     startMs = new Date(ev.start.dateTime).getTime();
     endMs   = new Date(ev.end.dateTime).getTime();
@@ -200,10 +170,10 @@ function firestoreUpsert(token, ev) {
   };
 
   var resp = UrlFetchApp.fetch(firestoreDocUrl(ev.id), {
-    method:          "patch",
-    contentType:     "application/json",
-    headers:         { Authorization: "Bearer " + token },
-    payload:         JSON.stringify({ fields: fields }),
+    method:             "patch",
+    contentType:        "application/json",
+    headers:            { Authorization: "Bearer " + token },
+    payload:            JSON.stringify({ fields: fields }),
     muteHttpExceptions: true,
   });
 
@@ -214,8 +184,8 @@ function firestoreUpsert(token, ev) {
 
 function firestoreDelete(token, docId) {
   UrlFetchApp.fetch(firestoreDocUrl(docId), {
-    method:          "delete",
-    headers:         { Authorization: "Bearer " + token },
+    method:             "delete",
+    headers:            { Authorization: "Bearer " + token },
     muteHttpExceptions: true,
   });
 }
@@ -226,7 +196,6 @@ function firestoreDocUrl(docId) {
        + "/calendarEvents/" + encodeURIComponent(docId);
 }
 
-// Firestore typed-value helpers
 function fStr(v)  { return { stringValue:   String(v) }; }
 function fBool(v) { return { booleanValue:  !!v }; }
 function fNull()  { return { nullValue:     null }; }
@@ -236,8 +205,6 @@ function fArr(vs) { return { arrayValue:    { values: vs } }; }
 
 // ================================================================
 // Service-account JWT authentication
-// Exchanges a signed JWT for a short-lived Google OAuth2 token
-// that has permission to write to Firestore.
 // ================================================================
 
 function getFirestoreToken() {
@@ -253,17 +220,14 @@ function getFirestoreToken() {
   }));
 
   var unsigned  = header + "." + payload;
-  var signature = b64url(Utilities.computeRsaSha256Signature(
-    unsigned,
-    PRIVATE_KEY.replace(/\\n/g, "\n")  // handle both literal \n and real newlines
-  ));
-
-  var jwt = unsigned + "." + signature;
+  var key       = "-----BEGIN PRIVATE KEY-----\n" + PRIVATE_KEY + "\n-----END PRIVATE KEY-----";
+  var signature = b64url(Utilities.computeRsaSha256Signature(unsigned, key));
+  var jwt       = unsigned + "." + signature;
 
   var resp = UrlFetchApp.fetch("https://oauth2.googleapis.com/token", {
-    method:      "post",
-    contentType: "application/x-www-form-urlencoded",
-    payload:     "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=" + jwt,
+    method:             "post",
+    contentType:        "application/x-www-form-urlencoded",
+    payload:            "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=" + jwt,
     muteHttpExceptions: true,
   });
 

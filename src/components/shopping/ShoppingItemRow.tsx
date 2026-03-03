@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Trash2, AlertCircle, Store, GripVertical } from "lucide-react";
+import { Trash2, Pencil, AlertCircle, Store } from "lucide-react";
 import type { ShoppingItem } from "@/types";
 
 interface ShoppingItemRowProps {
@@ -38,23 +38,9 @@ export default function ShoppingItemRow({
         isDragging ? "opacity-50 shadow-lg z-10 relative" : ""
       } ${dimmed ? "opacity-40" : ""} ${item.checked ? "opacity-60" : ""}`}
     >
-      {/* Drag handle — only for unchecked items */}
-      {!item.checked ? (
-        <button
-          {...attributes}
-          {...listeners}
-          className="flex-shrink-0 p-1 text-gray-300 hover:text-gray-400 touch-none cursor-grab active:cursor-grabbing"
-          aria-label="Drag to reorder"
-          tabIndex={-1}
-        >
-          <GripVertical size={15} />
-        </button>
-      ) : (
-        <div className="w-6 flex-shrink-0" />
-      )}
-
       {/* Checkbox */}
       <button
+        onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => { e.stopPropagation(); onToggle(!item.checked); }}
         className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors"
         style={{
@@ -70,8 +56,16 @@ export default function ShoppingItemRow({
         )}
       </button>
 
-      {/* Item body — tapping anywhere here opens the detail/edit modal */}
-      <div className="flex-1 min-w-0 py-0.5" onClick={onEdit} role="button" tabIndex={0}>
+      {/* Item body — press and hold to drag (unchecked only), quick tap to edit */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex-1 min-w-0 py-0.5 select-none"
+        style={{ touchAction: item.checked ? "auto" : "none" }}
+        onClick={onEdit}
+        role="button"
+        tabIndex={0}
+      >
         <div className="flex items-center gap-2 flex-wrap">
           <span
             className={`text-sm font-medium ${
@@ -104,8 +98,19 @@ export default function ShoppingItemRow({
         </div>
       </div>
 
+      {/* Edit */}
+      <button
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); onEdit(); }}
+        className="flex-shrink-0 p-1.5 text-gray-300 hover:text-gray-500 transition-colors rounded-lg"
+        aria-label="Edit item"
+      >
+        <Pencil size={14} />
+      </button>
+
       {/* Delete */}
       <button
+        onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => { e.stopPropagation(); onDelete(); }}
         className="flex-shrink-0 p-1.5 text-gray-300 hover:text-red-400 transition-colors rounded-lg"
         aria-label="Delete item"

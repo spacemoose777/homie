@@ -7,11 +7,12 @@ import IngredientsEditor from "./IngredientsEditor";
 
 interface MealEditModalProps {
   meal: Meal | null;
+  initialName?: string;
   onSave: (data: { name: string; ingredients: Ingredient[]; tags: string[] }) => void;
   onClose: () => void;
 }
 
-export default function MealEditModal({ meal, onSave, onClose }: MealEditModalProps) {
+export default function MealEditModal({ meal, initialName, onSave, onClose }: MealEditModalProps) {
   const [name, setName] = useState("");
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -23,11 +24,11 @@ export default function MealEditModal({ meal, onSave, onClose }: MealEditModalPr
       setIngredients(meal.ingredients);
       setTags(meal.tags);
     } else {
-      setName("");
+      setName(initialName ?? "");
       setIngredients([]);
       setTags([]);
     }
-  }, [meal]);
+  }, [meal, initialName]);
 
   function addTag() {
     const t = tagInput.trim().toLowerCase();

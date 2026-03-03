@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { startOfWeek, format } from "date-fns";
+import { startOfWeek, format, startOfMonth } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   subscribeToCalendarEvents,
@@ -20,7 +20,15 @@ import {
 } from "@/lib/recurring";
 import WeekStrip from "@/components/calendar/WeekStrip";
 import DayEventList from "@/components/calendar/DayEventList";
+import ScheduleView from "@/components/calendar/ScheduleView";
+import CalendarWeekView from "@/components/calendar/CalendarWeekView";
+import MonthView from "@/components/calendar/MonthView";
 import EventModal from "@/components/calendar/EventModal";
+import { Plus } from "lucide-react";
+
+type ViewMode = "schedule" | "week" | "month";
+
+const SLOT_HOURS: Record<string, number> = { breakfast: 8, lunch: 12, snacks: 15, dinner: 18 };
 
 export default function CalendarPage() {
   const { user, householdId } = useAuth();
@@ -32,6 +40,8 @@ export default function CalendarPage() {
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
+  const [monthRef, setMonthRef] = useState(() => new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>("schedule");
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
@@ -58,7 +68,7 @@ export default function CalendarPage() {
     return subscribeToWeekPlan(householdId, selectedWeekStart, setWeekPlan);
   }, [householdId, selectedWeekStart]);
 
-  // Expand events for a 3-month window around the current week
+  // Expand events for a 3-month window
   const { occurrences, datesWithEvents } = useMemo(() => {
     const rangeStart = format(weekStart, "yyyy-MM-dd");
     const rangeEndDate = new Date(weekStart);
@@ -66,7 +76,6 @@ export default function CalendarPage() {
     const rangeEnd = format(rangeEndDate, "yyyy-MM-dd");
     const occ = expandEventsForRange(events, rangeStart, rangeEnd);
     const dates = getDatesWithEvents(occ);
-    // Also dot days that have planned meals
     if (weekPlan?.days) {
       for (const [dateStr, dayPlan] of Object.entries(weekPlan.days)) {
         if (Object.values(dayPlan).some((v) => v !== null)) dates.add(dateStr);
@@ -80,18 +89,17 @@ export default function CalendarPage() {
     [occurrences, selectedDate]
   );
 
-  const SLOT_HOURS: Record<string, number> = { breakfast: 8, lunch: 12, snacks: 15, dinner: 18 };
-
+  // Meal entries for the selected day
   const mealEntries = useMemo(() => {
     const dateStr = format(selectedDate, "yyyy-MM-dd");
     const dayPlan = weekPlan?.days?.[dateStr];
     if (!dayPlan) return [];
     const mealMap = new Map(meals.map((m) => [m.id, m]));
     return (Object.entries(dayPlan) as [string, string | null][])
-      .filter(([, mealId]) => mealId !== null)
-      .map(([slot, mealId]) => {
-        const meal = mealMap.get(mealId!);
-        return meal ? { slot, mealId: mealId!, mealName: meal.name, hour: SLOT_HOURS[slot] ?? 18 } : null;
+      .filter(([, id]) => id !== null)
+      .map(([slot, id]) => {
+        const meal = mealMap.get(id!);
+        return meal ? { slot, mealId: id!, mealName: meal.name, hour: SLOT_HOURS[slot] ?? 18 } : null;
       })
       .filter((e): e is { slot: string; mealId: string; mealName: string; hour: number } => e !== null)
       .sort((a, b) => a.hour - b.hour);
@@ -127,30 +135,104 @@ export default function CalendarPage() {
     setShowEventModal(true);
   }
 
+  function handleSelectDate(date: Date) {
+    setSelectedDate(date);
+    setWeekStart(startOfWeek(date, { weekStartsOn: 1 }));
+    setMonthRef(date);
+    // Switch to day/schedule detail when tapping a date in week or month view
+    if (viewMode !== "schedule") setViewMode("schedule");
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Calendar</h1>
-
-      {/* Week strip */}
-      <div className="mb-6">
-        <WeekStrip
-          weekStart={weekStart}
-          selectedDate={selectedDate}
-          datesWithEvents={datesWithEvents}
-          onSelectDate={setSelectedDate}
-          onWeekChange={setWeekStart}
-        />
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
+        <button
+          onClick={() => { setEditingEvent(null); setShowEventModal(true); }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-white text-sm font-medium"
+          style={{ backgroundColor: "#FF6B6B" }}
+        >
+          <Plus size={14} />
+          Event
+        </button>
       </div>
 
-      {/* Day events */}
-      <DayEventList
-        occurrences={dayOccurrences}
-        mealEntries={mealEntries}
-        members={members}
-        selectedDate={selectedDate}
-        onAddEvent={() => { setEditingEvent(null); setShowEventModal(true); }}
-        onEditEvent={handleEditEvent}
-      />
+      {/* View mode toggle */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4">
+        {(["schedule", "week", "month"] as ViewMode[]).map((mode) => (
+          <button
+            key={mode}
+            onClick={() => setViewMode(mode)}
+            className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
+              viewMode === mode
+                ? "bg-white shadow text-gray-900"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {mode}
+          </button>
+        ))}
+      </div>
+
+      {/* Schedule view — week strip + day detail */}
+      {viewMode === "schedule" && (
+        <>
+          <div className="mb-4">
+            <WeekStrip
+              weekStart={weekStart}
+              selectedDate={selectedDate}
+              datesWithEvents={datesWithEvents}
+              onSelectDate={setSelectedDate}
+              onWeekChange={(w) => { setWeekStart(w); }}
+            />
+          </div>
+          <DayEventList
+            occurrences={dayOccurrences}
+            mealEntries={mealEntries}
+            members={members}
+            selectedDate={selectedDate}
+            onAddEvent={() => { setEditingEvent(null); setShowEventModal(true); }}
+            onEditEvent={handleEditEvent}
+          />
+        </>
+      )}
+
+      {/* Week view — 7-day row list */}
+      {viewMode === "week" && (
+        <>
+          <div className="mb-4">
+            <WeekStrip
+              weekStart={weekStart}
+              selectedDate={selectedDate}
+              datesWithEvents={datesWithEvents}
+              onSelectDate={handleSelectDate}
+              onWeekChange={setWeekStart}
+            />
+          </div>
+          <CalendarWeekView
+            weekStart={weekStart}
+            occurrences={occurrences}
+            mealEntries={mealEntries}
+            members={members}
+            selectedDate={selectedDate}
+            onSelectDate={handleSelectDate}
+            onEditEvent={handleEditEvent}
+          />
+        </>
+      )}
+
+      {/* Month view */}
+      {viewMode === "month" && (
+        <MonthView
+          referenceDate={monthRef}
+          occurrences={occurrences}
+          datesWithEvents={datesWithEvents}
+          selectedDate={selectedDate}
+          onSelectDate={handleSelectDate}
+          onMonthChange={setMonthRef}
+        />
+      )}
 
       {/* Event modal */}
       {showEventModal && (
