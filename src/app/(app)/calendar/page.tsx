@@ -5,12 +5,14 @@ import { startOfWeek, format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   subscribeToCalendarEvents,
+  subscribeToMeals,
+  subscribeToWeekPlan,
   addCalendarEvent,
   updateCalendarEvent,
   deleteCalendarEvent,
   getHouseholdMembers,
 } from "@/lib/firebase/firestore";
-import type { CalendarEvent, MemberProfile } from "@/types";
+import type { CalendarEvent, MemberProfile, Meal, WeekPlan } from "@/types";
 import {
   expandEventsForRange,
   getOccurrencesForDay,
@@ -24,6 +26,8 @@ export default function CalendarPage() {
   const { user, householdId } = useAuth();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [members, setMembers] = useState<MemberProfile[]>([]);
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [weekPlan, setWeekPlan] = useState<WeekPlan | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
@@ -42,21 +46,56 @@ export default function CalendarPage() {
     getHouseholdMembers(householdId).then(setMembers);
   }, [householdId]);
 
+  useEffect(() => {
+    if (!householdId) return;
+    return subscribeToMeals(householdId, setMeals);
+  }, [householdId]);
+
+  const selectedWeekStart = format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd");
+
+  useEffect(() => {
+    if (!householdId) return;
+    return subscribeToWeekPlan(householdId, selectedWeekStart, setWeekPlan);
+  }, [householdId, selectedWeekStart]);
+
   // Expand events for a 3-month window around the current week
   const { occurrences, datesWithEvents } = useMemo(() => {
     const rangeStart = format(weekStart, "yyyy-MM-dd");
-    // Expand 90 days forward
     const rangeEndDate = new Date(weekStart);
     rangeEndDate.setDate(rangeEndDate.getDate() + 90);
     const rangeEnd = format(rangeEndDate, "yyyy-MM-dd");
     const occ = expandEventsForRange(events, rangeStart, rangeEnd);
-    return { occurrences: occ, datesWithEvents: getDatesWithEvents(occ) };
-  }, [events, weekStart]);
+    const dates = getDatesWithEvents(occ);
+    // Also dot days that have planned meals
+    if (weekPlan?.days) {
+      for (const [dateStr, dayPlan] of Object.entries(weekPlan.days)) {
+        if (Object.values(dayPlan).some((v) => v !== null)) dates.add(dateStr);
+      }
+    }
+    return { occurrences: occ, datesWithEvents: dates };
+  }, [events, weekStart, weekPlan]);
 
   const dayOccurrences = useMemo(
     () => getOccurrencesForDay(occurrences, format(selectedDate, "yyyy-MM-dd")),
     [occurrences, selectedDate]
   );
+
+  const SLOT_HOURS: Record<string, number> = { breakfast: 8, lunch: 12, snacks: 15, dinner: 18 };
+
+  const mealEntries = useMemo(() => {
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    const dayPlan = weekPlan?.days?.[dateStr];
+    if (!dayPlan) return [];
+    const mealMap = new Map(meals.map((m) => [m.id, m]));
+    return (Object.entries(dayPlan) as [string, string | null][])
+      .filter(([, mealId]) => mealId !== null)
+      .map(([slot, mealId]) => {
+        const meal = mealMap.get(mealId!);
+        return meal ? { slot, mealId: mealId!, mealName: meal.name, hour: SLOT_HOURS[slot] ?? 18 } : null;
+      })
+      .filter((e): e is { slot: string; mealId: string; mealName: string; hour: number } => e !== null)
+      .sort((a, b) => a.hour - b.hour);
+  }, [weekPlan, meals, selectedDate]);
 
   async function handleSaveEvent(
     data: Omit<CalendarEvent, "id" | "createdAt" | "createdBy" | "sourceType" | "googleEventId">
@@ -106,6 +145,7 @@ export default function CalendarPage() {
       {/* Day events */}
       <DayEventList
         occurrences={dayOccurrences}
+        mealEntries={mealEntries}
         members={members}
         selectedDate={selectedDate}
         onAddEvent={() => { setEditingEvent(null); setShowEventModal(true); }}
