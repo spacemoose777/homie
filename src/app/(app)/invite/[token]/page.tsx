@@ -30,7 +30,8 @@ export default function InvitePage() {
         }
         setHouseholdName(`Household`);
         setStatus("valid");
-      } catch {
+      } catch (err) {
+        console.error("[InvitePage] Error validating invite:", err);
         setStatus("invalid");
       }
     }
