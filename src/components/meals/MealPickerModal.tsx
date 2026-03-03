@@ -39,8 +39,8 @@ export default function MealPickerModal({
         </div>
 
         {/* Search */}
-        <div className="px-4 pt-3 pb-2">
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-xl">
+        <div className="px-4 pt-3 pb-3">
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 rounded-xl">
             <Search size={14} className="text-gray-400 flex-shrink-0" />
             <input
               type="text"
@@ -56,7 +56,7 @@ export default function MealPickerModal({
           {trimmed && (
             <button
               onClick={() => { onQuickCreate(trimmed); onClose(); }}
-              className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-white transition-colors"
+              className="mt-3 w-full flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-medium text-white transition-colors"
               style={{ backgroundColor: "#FF6B6B" }}
             >
               <Plus size={16} />
