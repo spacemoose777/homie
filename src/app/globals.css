@@ -61,6 +61,7 @@ body {
   background: var(--bg-app);
   color: var(--text-1);
   font-family: Inter, system-ui, sans-serif;
+  overflow-x: hidden;
 }
 
 /* Remove tap highlight on mobile */
