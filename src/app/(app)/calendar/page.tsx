@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState, useMemo } from "react";
 import { startOfWeek, format, startOfMonth } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
