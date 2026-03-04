@@ -168,7 +168,7 @@ export default function ShoppingPage() {
 
       {/* Add item */}
       <div className="mb-4">
-        <AddItemBar memory={memory} onAdd={handleAdd} />
+        <AddItemBar memory={memory} existingItems={items} onAdd={handleAdd} />
       </div>
 
       {/* Filters */}
