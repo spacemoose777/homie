@@ -79,6 +79,16 @@ service cloud.firestore {
         allow read: if isMember(hid);
         allow create, update, delete: if isAdmin(hid);
       }
+
+      // ── /households/{hid}/customLists/{listId} ──
+      match /customLists/{listId} {
+        allow read, write: if isMember(hid);
+
+        // ── /households/{hid}/customLists/{listId}/items/{itemId} ──
+        match /items/{itemId} {
+          allow read, write: if isMember(hid);
+        }
+      }
     }
 
     // Allow collectionGroup queries on "invites" (needed by findInviteByToken)
