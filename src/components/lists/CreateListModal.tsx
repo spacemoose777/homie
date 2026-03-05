@@ -5,6 +5,18 @@ import { X } from "lucide-react";
 
 const PRESET_EMOJIS = ["🔧", "💊", "🌿", "🏠", "🎨", "📦", "🐾", "🧹", "💻", "🎁", "🧴", "🛠️"];
 
+// Extract the first emoji/grapheme from a string
+function firstGrapheme(str: string): string {
+  if (!str) return "";
+  if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
+    const seg = new (Intl as any).Segmenter();
+    const [first] = seg.segment(str);
+    return first?.segment ?? str[0];
+  }
+  // Fallback: take first two code points (covers most emoji)
+  return [...str].slice(0, 2).join("");
+}
+
 interface CreateListModalProps {
   onCreate: (name: string, emoji?: string) => void;
   onClose: () => void;
@@ -12,12 +24,28 @@ interface CreateListModalProps {
 
 export default function CreateListModal({ onCreate, onClose }: CreateListModalProps) {
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("");
+  const [preset, setPreset] = useState("");   // selected from grid
+  const [custom, setCustom] = useState("");   // typed by user
+
+  // Active emoji is whichever was set last
+  const activeEmoji = custom || preset;
+
+  function pickPreset(e: string) {
+    setPreset(preset === e ? "" : e);
+    setCustom("");
+  }
+
+  function handleCustomChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    const first = firstGrapheme(raw);
+    setCustom(first);
+    setPreset("");
+  }
 
   function handleCreate() {
     const trimmed = name.trim();
     if (!trimmed) return;
-    onCreate(trimmed, emoji || undefined);
+    onCreate(trimmed, activeEmoji || undefined);
     onClose();
   }
 
@@ -50,21 +78,41 @@ export default function CreateListModal({ onCreate, onClose }: CreateListModalPr
           {/* Emoji picker */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Icon (optional)</label>
-            <div className="flex flex-wrap gap-2">
+
+            {/* Preset grid */}
+            <div className="flex flex-wrap gap-2 mb-3">
               {PRESET_EMOJIS.map((e) => (
                 <button
                   key={e}
                   type="button"
-                  onClick={() => setEmoji(emoji === e ? "" : e)}
+                  onClick={() => pickPreset(e)}
                   className="w-10 h-10 rounded-xl text-xl flex items-center justify-center border-2 transition-colors"
                   style={{
-                    borderColor: emoji === e ? "#FF6B6B" : "#e5e7eb",
-                    backgroundColor: emoji === e ? "#FFF0F0" : "transparent",
+                    borderColor: activeEmoji === e ? "#FF6B6B" : "#e5e7eb",
+                    backgroundColor: activeEmoji === e ? "#FFF0F0" : "transparent",
                   }}
                 >
                   {e}
                 </button>
               ))}
+            </div>
+
+            {/* Custom emoji input */}
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                value={custom}
+                onChange={handleCustomChange}
+                placeholder="😊"
+                className="w-14 h-10 text-center text-2xl rounded-xl border-2 focus:outline-none transition-colors"
+                style={{
+                  borderColor: custom ? "#FF6B6B" : "#e5e7eb",
+                  backgroundColor: custom ? "#FFF0F0" : "transparent",
+                }}
+              />
+              <span className="text-sm text-gray-400">
+                Or tap here and use your keyboard emoji picker
+              </span>
             </div>
           </div>
         </div>

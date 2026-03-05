@@ -1,6 +1,12 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, enableIndexedDbPersistence, type Firestore } from "firebase/firestore";
+import {
+  initializeFirestore,
+  getFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  type Firestore,
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -20,17 +26,24 @@ if (!firebaseConfig.apiKey) {
 
 const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth: Auth = getAuth(app);
-const db: Firestore = getFirestore(app);
 
-// Enable offline persistence (only in browser)
+// Use multi-tab persistent cache in the browser, plain Firestore on the server.
+// persistentMultipleTabManager lets multiple tabs (PWA + web) share the same
+// IndexedDB cache without conflicting, preventing the "freakout" on second login.
+let db: Firestore;
 if (typeof window !== "undefined") {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === "failed-precondition") {
-      console.warn("Firestore persistence unavailable: multiple tabs open");
-    } else if (err.code === "unimplemented") {
-      console.warn("Firestore persistence not supported in this browser");
-    }
-  });
+  try {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    });
+  } catch {
+    // Already initialized (e.g. hot-reload) — fall back to existing instance
+    db = getFirestore(app);
+  }
+} else {
+  db = getFirestore(app);
 }
 
 export { app, auth, db };
