@@ -6,7 +6,7 @@ import type { ItemMemory, ShoppingItem } from "@/types";
 
 interface AddItemBarProps {
   memory: ItemMemory[];
-  existingItems: ShoppingItem[];
+  existingItems?: ShoppingItem[];
   onAdd: (name: string) => void;
 }
 
@@ -30,7 +30,7 @@ export default function AddItemBar({ memory, existingItems, onAdd }: AddItemBarP
   const recognitionRef = useRef<any>(null);
 
   // Duplicate detection — match against any unchecked item
-  const duplicate = value.trim()
+  const duplicate = value.trim() && existingItems
     ? (existingItems.find(
         (item) => !item.checked && normalise(item.name) === normalise(value)
       ) ?? null)
