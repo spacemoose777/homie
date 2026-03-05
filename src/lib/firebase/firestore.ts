@@ -496,6 +496,18 @@ export async function createCustomList(
   return docRef.id;
 }
 
+export async function updateCustomList(
+  householdId: string,
+  listId: string,
+  updates: { name?: string; emoji?: string | null }
+) {
+  const data: Record<string, unknown> = {};
+  if (updates.name !== undefined) data.name = updates.name;
+  // Pass null to clear the emoji field, a string to set it, omit to leave unchanged
+  if (updates.emoji !== undefined) data.emoji = updates.emoji || null;
+  await updateDoc(doc(db, "households", householdId, "customLists", listId), data);
+}
+
 export async function deleteCustomList(householdId: string, listId: string) {
   const itemsRef = collection(db, "households", householdId, "customLists", listId, "items");
   const snapshot = await getDocs(itemsRef);

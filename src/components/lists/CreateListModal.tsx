@@ -13,21 +13,33 @@ function firstGrapheme(str: string): string {
     const [first] = seg.segment(str);
     return first?.segment ?? str[0];
   }
-  // Fallback: take first two code points (covers most emoji)
   return [...str].slice(0, 2).join("");
 }
 
 interface CreateListModalProps {
-  onCreate: (name: string, emoji?: string) => void;
+  /** Pre-fill for edit mode. If provided, modal shows "Edit List" / "Save". */
+  initialName?: string;
+  initialEmoji?: string;
+  onSubmit: (name: string, emoji?: string) => void;
   onClose: () => void;
 }
 
-export default function CreateListModal({ onCreate, onClose }: CreateListModalProps) {
-  const [name, setName] = useState("");
-  const [preset, setPreset] = useState("");   // selected from grid
-  const [custom, setCustom] = useState("");   // typed by user
+export default function CreateListModal({
+  initialName,
+  initialEmoji,
+  onSubmit,
+  onClose,
+}: CreateListModalProps) {
+  const isEditing = initialName !== undefined;
 
-  // Active emoji is whichever was set last
+  // Split initialEmoji into preset vs custom
+  const initPreset = initialEmoji && PRESET_EMOJIS.includes(initialEmoji) ? initialEmoji : "";
+  const initCustom = initialEmoji && !PRESET_EMOJIS.includes(initialEmoji) ? initialEmoji : "";
+
+  const [name, setName] = useState(initialName ?? "");
+  const [preset, setPreset] = useState(initPreset);
+  const [custom, setCustom] = useState(initCustom);
+
   const activeEmoji = custom || preset;
 
   function pickPreset(e: string) {
@@ -36,16 +48,15 @@ export default function CreateListModal({ onCreate, onClose }: CreateListModalPr
   }
 
   function handleCustomChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value;
-    const first = firstGrapheme(raw);
+    const first = firstGrapheme(e.target.value);
     setCustom(first);
     setPreset("");
   }
 
-  function handleCreate() {
+  function handleSubmit() {
     const trimmed = name.trim();
     if (!trimmed) return;
-    onCreate(trimmed, activeEmoji || undefined);
+    onSubmit(trimmed, activeEmoji || undefined);
     onClose();
   }
 
@@ -53,7 +64,7 @@ export default function CreateListModal({ onCreate, onClose }: CreateListModalPr
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[85dvh]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">New List</h2>
+          <h2 className="font-semibold text-gray-900">{isEditing ? "Edit List" : "New List"}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={20} />
           </button>
@@ -67,7 +78,7 @@ export default function CreateListModal({ onCreate, onClose }: CreateListModalPr
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               placeholder="e.g. Hardware Store, Pharmacy…"
               autoFocus
               className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-colors"
@@ -125,12 +136,12 @@ export default function CreateListModal({ onCreate, onClose }: CreateListModalPr
             Cancel
           </button>
           <button
-            onClick={handleCreate}
+            onClick={handleSubmit}
             disabled={!name.trim()}
             className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium disabled:opacity-50"
             style={{ backgroundColor: "#FF6B6B" }}
           >
-            Create
+            {isEditing ? "Save" : "Create"}
           </button>
         </div>
       </div>

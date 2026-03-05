@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useMemo } from "react";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +12,7 @@ import {
   subscribeToCustomListItems,
   addCustomListItem,
   updateCustomListItem,
+  updateCustomList,
   toggleCustomListItem,
   deleteCustomListItem,
   clearCompletedCustomListItems,
@@ -20,6 +21,7 @@ import {
 import type { CustomList, CustomListItem, ItemMemory } from "@/types";
 import CustomListView from "@/components/lists/CustomListView";
 import CustomItemEditModal from "@/components/lists/CustomItemEditModal";
+import CreateListModal from "@/components/lists/CreateListModal";
 import AddItemBar from "@/components/shopping/AddItemBar";
 import FilterBar from "@/components/shopping/FilterBar";
 
@@ -33,6 +35,7 @@ export default function ListDetailPage() {
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [editingItem, setEditingItem] = useState<CustomListItem | null>(null);
+  const [editingListMeta, setEditingListMeta] = useState(false);
 
   useEffect(() => {
     if (!householdId) return;
@@ -96,6 +99,11 @@ export default function ListDetailPage() {
     await updateCustomListItem(householdId, listId, editingItem.id, updates);
   }
 
+  async function handleUpdateListMeta(name: string, emoji?: string) {
+    if (!householdId) return;
+    await updateCustomList(householdId, listId, { name, emoji: emoji ?? null });
+  }
+
   async function handleClearCompleted() {
     if (!householdId) return;
     await clearCompletedCustomListItems(householdId, listId);
@@ -122,6 +130,13 @@ export default function ListDetailPage() {
             <h1 className="text-2xl font-bold text-gray-900 truncate">
               {list?.name ?? "List"}
             </h1>
+            <button
+              onClick={() => setEditingListMeta(true)}
+              className="text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0"
+              aria-label="Edit list name"
+            >
+              <Pencil size={16} />
+            </button>
           </div>
           <p className="text-sm text-gray-400 mt-0.5">
             {items.filter((i) => !i.checked).length} items remaining
@@ -167,7 +182,17 @@ export default function ListDetailPage() {
         onReorder={handleReorder}
       />
 
-      {/* Edit modal */}
+      {/* Edit list name/emoji modal */}
+      {editingListMeta && list && (
+        <CreateListModal
+          initialName={list.name}
+          initialEmoji={list.emoji}
+          onSubmit={handleUpdateListMeta}
+          onClose={() => setEditingListMeta(false)}
+        />
+      )}
+
+      {/* Edit item modal */}
       {editingItem && (
         <CustomItemEditModal
           item={editingItem}

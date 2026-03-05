@@ -3,12 +3,13 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
-import { Plus, ChevronRight, Trash2 } from "lucide-react";
+import { Plus, ChevronRight, Trash2, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   subscribeToCustomLists,
   createCustomList,
+  updateCustomList,
   deleteCustomList,
 } from "@/lib/firebase/firestore";
 import type { CustomList } from "@/types";
@@ -18,6 +19,7 @@ export default function ListsPage() {
   const { user, householdId } = useAuth();
   const [lists, setLists] = useState<CustomList[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingList, setEditingList] = useState<CustomList | null>(null);
 
   useEffect(() => {
     if (!householdId) return;
@@ -28,6 +30,11 @@ export default function ListsPage() {
   async function handleCreate(name: string, emoji?: string) {
     if (!householdId || !user) return;
     await createCustomList(householdId, { name, emoji, createdBy: user.uid });
+  }
+
+  async function handleUpdate(name: string, emoji?: string) {
+    if (!householdId || !editingList) return;
+    await updateCustomList(householdId, editingList.id, { name, emoji: emoji ?? null });
   }
 
   async function handleDelete(listId: string) {
@@ -96,6 +103,13 @@ export default function ListsPage() {
                 <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
               </Link>
               <button
+                onClick={() => setEditingList(list)}
+                className="p-2.5 text-gray-300 hover:text-gray-500 transition-colors"
+                aria-label="Edit list"
+              >
+                <Pencil size={16} />
+              </button>
+              <button
                 onClick={() => handleDelete(list.id)}
                 className="p-2.5 text-gray-300 hover:text-red-400 transition-colors"
                 aria-label="Delete list"
@@ -108,7 +122,19 @@ export default function ListsPage() {
       )}
 
       {showCreate && (
-        <CreateListModal onCreate={handleCreate} onClose={() => setShowCreate(false)} />
+        <CreateListModal
+          onSubmit={handleCreate}
+          onClose={() => setShowCreate(false)}
+        />
+      )}
+
+      {editingList && (
+        <CreateListModal
+          initialName={editingList.name}
+          initialEmoji={editingList.emoji}
+          onSubmit={handleUpdate}
+          onClose={() => setEditingList(null)}
+        />
       )}
     </div>
   );
