@@ -485,7 +485,14 @@ export async function createCustomList(
   list: Omit<CustomList, "id" | "createdAt">
 ): Promise<string> {
   const ref = collection(db, "households", householdId, "customLists");
-  const docRef = await addDoc(ref, { ...list, createdAt: Timestamp.now() });
+  // Omit emoji if undefined — Firestore rejects documents with undefined fields
+  const data: Record<string, unknown> = {
+    name: list.name,
+    createdBy: list.createdBy,
+    createdAt: Timestamp.now(),
+  };
+  if (list.emoji) data.emoji = list.emoji;
+  const docRef = await addDoc(ref, data);
   return docRef.id;
 }
 
