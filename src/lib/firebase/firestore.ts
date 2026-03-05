@@ -28,6 +28,8 @@ import type {
   DayPlan,
   CalendarEvent,
   Store,
+  CustomList,
+  CustomListItem,
   ThemeKey,
   ViewMode,
   UserRole,
@@ -459,4 +461,121 @@ export async function updateStore(
 
 export async function deleteStore(householdId: string, storeId: string) {
   await deleteDoc(doc(db, "households", householdId, "stores", storeId));
+}
+
+// ── Custom Lists ──
+
+export function subscribeToCustomLists(
+  householdId: string,
+  callback: (lists: CustomList[]) => void
+) {
+  const ref = collection(db, "households", householdId, "customLists");
+  const q = query(ref, orderBy("createdAt", "asc"));
+  return onSnapshot(q, (snapshot) => {
+    const lists: CustomList[] = snapshot.docs.map((d) => ({
+      ...(d.data() as Omit<CustomList, "id">),
+      id: d.id,
+    }));
+    callback(lists);
+  });
+}
+
+export async function createCustomList(
+  householdId: string,
+  list: Omit<CustomList, "id" | "createdAt">
+): Promise<string> {
+  const ref = collection(db, "households", householdId, "customLists");
+  const docRef = await addDoc(ref, { ...list, createdAt: Timestamp.now() });
+  return docRef.id;
+}
+
+export async function deleteCustomList(householdId: string, listId: string) {
+  const itemsRef = collection(db, "households", householdId, "customLists", listId, "items");
+  const snapshot = await getDocs(itemsRef);
+  const batch = writeBatch(db);
+  snapshot.docs.forEach((d) => batch.delete(d.ref));
+  batch.delete(doc(db, "households", householdId, "customLists", listId));
+  await batch.commit();
+}
+
+export function subscribeToCustomListItems(
+  householdId: string,
+  listId: string,
+  callback: (items: CustomListItem[]) => void
+) {
+  const ref = collection(db, "households", householdId, "customLists", listId, "items");
+  const q = query(ref, orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const items: CustomListItem[] = snapshot.docs.map((d) => ({
+      ...(d.data() as Omit<CustomListItem, "id">),
+      id: d.id,
+    }));
+    callback(items);
+  });
+}
+
+export async function addCustomListItem(
+  householdId: string,
+  listId: string,
+  item: Omit<CustomListItem, "id" | "createdAt">
+) {
+  const ref = collection(db, "households", householdId, "customLists", listId, "items");
+  const docRef = await addDoc(ref, { ...item, createdAt: Timestamp.now() });
+  return docRef.id;
+}
+
+export async function updateCustomListItem(
+  householdId: string,
+  listId: string,
+  itemId: string,
+  updates: Partial<Omit<CustomListItem, "id" | "createdAt" | "addedBy">>
+) {
+  await updateDoc(
+    doc(db, "households", householdId, "customLists", listId, "items", itemId),
+    updates
+  );
+}
+
+export async function toggleCustomListItem(
+  householdId: string,
+  listId: string,
+  itemId: string,
+  checked: boolean
+) {
+  await updateDoc(
+    doc(db, "households", householdId, "customLists", listId, "items", itemId),
+    { checked }
+  );
+}
+
+export async function updateCustomListItemSortOrder(
+  householdId: string,
+  listId: string,
+  itemId: string,
+  sortOrder: number
+) {
+  await updateDoc(
+    doc(db, "households", householdId, "customLists", listId, "items", itemId),
+    { sortOrder }
+  );
+}
+
+export async function deleteCustomListItem(
+  householdId: string,
+  listId: string,
+  itemId: string
+) {
+  await deleteDoc(
+    doc(db, "households", householdId, "customLists", listId, "items", itemId)
+  );
+}
+
+export async function clearCompletedCustomListItems(householdId: string, listId: string) {
+  const ref = collection(db, "households", householdId, "customLists", listId, "items");
+  const snapshot = await getDocs(ref);
+  const batch = writeBatch(db);
+  snapshot.docs.forEach((d) => {
+    if ((d.data() as CustomListItem).checked) batch.delete(d.ref);
+  });
+  await batch.commit();
 }

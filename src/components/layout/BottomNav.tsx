@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, UtensilsCrossed, Calendar, Settings } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed, Calendar, LayoutList, Settings } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/shopping", label: "Shopping", Icon: ShoppingCart },
   { href: "/meals", label: "Meals", Icon: UtensilsCrossed },
   { href: "/calendar", label: "Calendar", Icon: Calendar },
+  { href: "/lists", label: "Lists", Icon: LayoutList },
   { href: "/settings", label: "Settings", Icon: Settings },
 ];
 

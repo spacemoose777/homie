@@ -132,3 +132,27 @@ export interface Store {
   departments: string[];
   createdAt: Timestamp;
 }
+
+// Custom list at /households/{hid}/customLists/{id}
+export interface CustomList {
+  id: string;
+  name: string;
+  emoji?: string;
+  createdBy: string;
+  createdAt: Timestamp;
+}
+
+// Item in a custom list at /households/{hid}/customLists/{listId}/items/{id}
+export interface CustomListItem {
+  id: string;
+  name: string;
+  brand: string | null;
+  brandBackup: string | null;
+  section: string | null;
+  quantity: string | null;
+  checked: boolean;
+  addedBy: string;
+  createdAt: Timestamp;
+  urgent?: boolean;
+  sortOrder?: number;
+}
