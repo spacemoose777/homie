@@ -50,7 +50,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar />
       {/* Main content area — offset by sidebar on desktop */}
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen min-w-0">
-        <main className="flex-1 pb-20 md:pb-0">{children}</main>
+        {/* pb accounts for fixed bottom nav (4rem) + device safe area (home indicator).
+            On desktop the nav is hidden so we reset to pb-0. */}
+        <main
+          className="flex-1 md:pb-0"
+          style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
+        >
+          {children}
+        </main>
       </div>
       <BottomNav />
     </div>

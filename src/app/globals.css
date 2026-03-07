@@ -61,7 +61,9 @@ body {
   background: var(--bg-app);
   color: var(--text-1);
   font-family: Inter, system-ui, sans-serif;
-  overflow-x: hidden;
+  /* Use clip not hidden — 'hidden' creates a new scroll container which
+     breaks touch events on position:fixed children (bottom nav) in iOS Safari */
+  overflow-x: clip;
 }
 
 /* Remove tap highlight on mobile */

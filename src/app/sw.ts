@@ -14,7 +14,9 @@ declare const self: ServiceWorkerGlobalScope & typeof globalThis;
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
-  skipWaiting: true,
+  // skipWaiting intentionally omitted — the UpdatePrompt UI handles activation
+  // via the SKIP_WAITING message below. Having skipWaiting:true caused the SW
+  // to activate silently and trigger window.location.reload() mid-session.
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: defaultCache,

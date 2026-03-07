@@ -465,6 +465,17 @@ export async function deleteStore(householdId: string, storeId: string) {
 
 // ── Custom Lists ──
 
+export function subscribeToCustomList(
+  householdId: string,
+  listId: string,
+  callback: (list: CustomList | null) => void
+) {
+  return onSnapshot(
+    doc(db, "households", householdId, "customLists", listId),
+    (snap) => callback(snap.exists() ? { ...(snap.data() as Omit<CustomList, "id">), id: snap.id } : null)
+  );
+}
+
 export function subscribeToCustomLists(
   householdId: string,
   callback: (lists: CustomList[]) => void

@@ -33,7 +33,7 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className="min-h-screen overflow-x-hidden">
+      <body className="min-h-screen">
         <PWAInstallProvider>
           <AuthProvider>
             {children}

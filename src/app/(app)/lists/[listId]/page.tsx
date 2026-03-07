@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  subscribeToCustomLists,
+  subscribeToCustomList,
   subscribeToCustomListItems,
   addCustomListItem,
   updateCustomListItem,
@@ -39,9 +39,7 @@ export default function ListDetailPage() {
 
   useEffect(() => {
     if (!householdId) return;
-    const unsub = subscribeToCustomLists(householdId, (lists) => {
-      setList(lists.find((l) => l.id === listId) ?? null);
-    });
+    const unsub = subscribeToCustomList(householdId, listId, setList);
     return () => unsub();
   }, [householdId, listId]);
 
