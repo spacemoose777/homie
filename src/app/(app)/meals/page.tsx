@@ -15,14 +15,17 @@ import {
   updateMeal,
   deleteMeal,
   updateDaySlot,
+  updateDayCook,
+  getHouseholdMembers,
 } from "@/lib/firebase/firestore";
-import type { Meal, WeekPlan, DayPlan, ShoppingItem, Household } from "@/types";
+import type { Meal, WeekPlan, DayPlan, ShoppingItem, Household, MemberProfile } from "@/types";
 import WeekView from "@/components/meals/WeekView";
 import MealPickerModal from "@/components/meals/MealPickerModal";
 import MealEditModal from "@/components/meals/MealEditModal";
 import MealActionSheet from "@/components/meals/MealActionSheet";
 import RescheduleModal from "@/components/meals/RescheduleModal";
 import AddToShoppingButton from "@/components/meals/AddToShoppingButton";
+import CookPickerSheet from "@/components/meals/CookPickerSheet";
 
 type SlotTarget = { date: string; slot: keyof DayPlan } | null;
 type ViewingSlot = { mealId: string; date: string; slot: keyof DayPlan } | null;
@@ -33,6 +36,7 @@ export default function MealsPage() {
   const [weekPlan, setWeekPlan] = useState<WeekPlan | null>(null);
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const [household, setHousehold] = useState<Household | null>(null);
+  const [members, setMembers] = useState<MemberProfile[]>([]);
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
@@ -42,6 +46,7 @@ export default function MealsPage() {
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
   const [viewingSlot, setViewingSlot] = useState<ViewingSlot>(null);
   const [rescheduling, setRescheduling] = useState<ViewingSlot>(null);
+  const [cookTarget, setCookTarget] = useState<string | null>(null); // ISO date
 
   const weekStartStr = format(weekStart, "yyyy-MM-dd");
 
@@ -67,6 +72,11 @@ export default function MealsPage() {
     if (!householdId) return;
     const unsub = subscribeToHousehold(householdId, setHousehold);
     return () => unsub();
+  }, [householdId]);
+
+  useEffect(() => {
+    if (!householdId) return;
+    getHouseholdMembers(householdId).then(setMembers);
   }, [householdId]);
 
   const mealSlots = household?.mealSlots ?? ["dinner"];
@@ -149,6 +159,19 @@ export default function MealsPage() {
     setViewingSlot(null);
   }
 
+  // ── Cook ─────────────────────────────────────────────────────────
+
+  async function handleSetCook(cook: string | null) {
+    if (!householdId || !cookTarget) return;
+    await updateDayCook(householdId, weekStartStr, cookTarget, cook);
+    setCookTarget(null);
+  }
+
+  function currentCookForTarget(): string | null {
+    if (!cookTarget || !weekPlan) return null;
+    return weekPlan.days[cookTarget]?.cook ?? null;
+  }
+
   // ── Reschedule ───────────────────────────────────────────────────
 
   async function handleReschedule(toDate: string, toSlot: keyof DayPlan) {
@@ -180,10 +203,12 @@ export default function MealsPage() {
         weekPlan={weekPlan}
         weekStart={weekStart}
         mealSlots={mealSlots}
+        members={members}
         onWeekChange={setWeekStart}
         onPickMeal={(date, slot) => setSlotTarget({ date, slot })}
         onClearSlot={handleClearSlot}
         onMealTap={handleMealTap}
+        onSetCook={setCookTarget}
       />
 
       {/* Meal picker */}
@@ -238,6 +263,16 @@ export default function MealsPage() {
           fromSlot={rescheduling.slot}
           onMove={handleReschedule}
           onClose={() => setRescheduling(null)}
+        />
+      )}
+
+      {/* Cook picker */}
+      {cookTarget && (
+        <CookPickerSheet
+          members={members}
+          currentCook={currentCookForTarget()}
+          onSelect={handleSetCook}
+          onClose={() => setCookTarget(null)}
         />
       )}
     </div>

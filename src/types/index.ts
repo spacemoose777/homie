@@ -92,7 +92,9 @@ export interface DayPlan {
   breakfast: string | null;
   lunch: string | null;
   dinner: string | null;
+  dinnerAlt: string | null;
   snacks: string | null;
+  cook: string | null;
 }
 
 // Week plan at /households/{hid}/weekPlans/{weekStartDate}

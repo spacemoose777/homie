@@ -379,13 +379,34 @@ export async function updateDaySlot(
       breakfast: null,
       lunch: null,
       dinner: null,
+      dinnerAlt: null,
       snacks: null,
+      cook: null,
     };
     await updateDoc(docRef, { [`days.${date}`]: { ...existingDay, [slot]: value } });
   } else {
-    const emptyDay: DayPlan = { breakfast: null, lunch: null, dinner: null, snacks: null };
+    const emptyDay: DayPlan = { breakfast: null, lunch: null, dinner: null, dinnerAlt: null, snacks: null, cook: null };
     const days: Record<string, DayPlan> = {};
     days[date] = { ...emptyDay, [slot]: value };
+    await setDoc(docRef, { weekStartDate, days });
+  }
+}
+
+export async function updateDayCook(
+  householdId: string,
+  weekStartDate: string,
+  date: string,
+  cook: string | null
+) {
+  const docRef = doc(db, "households", householdId, "weekPlans", weekStartDate);
+  const snap = await getDoc(docRef);
+
+  if (snap.exists()) {
+    await updateDoc(docRef, { [`days.${date}.cook`]: cook });
+  } else {
+    const emptyDay: DayPlan = { breakfast: null, lunch: null, dinner: null, dinnerAlt: null, snacks: null, cook };
+    const days: Record<string, DayPlan> = {};
+    days[date] = emptyDay;
     await setDoc(docRef, { weekStartDate, days });
   }
 }
