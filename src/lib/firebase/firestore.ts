@@ -30,6 +30,7 @@ import type {
   Store,
   CustomList,
   CustomListItem,
+  Attachment,
   ThemeKey,
   ViewMode,
   UserRole,
@@ -291,6 +292,14 @@ export async function clearCompletedItems(householdId: string) {
     if ((d.data() as ShoppingItem).checked) batch.delete(d.ref);
   });
   await batch.commit();
+}
+
+export async function updateShoppingItemAttachments(
+  householdId: string,
+  itemId: string,
+  attachments: Attachment[]
+) {
+  await updateDoc(doc(db, "households", householdId, "shoppingItems", itemId), { attachments });
 }
 
 // ── Item Memory ──
@@ -629,4 +638,16 @@ export async function clearCompletedCustomListItems(householdId: string, listId:
     if ((d.data() as CustomListItem).checked) batch.delete(d.ref);
   });
   await batch.commit();
+}
+
+export async function updateCustomListItemAttachments(
+  householdId: string,
+  listId: string,
+  itemId: string,
+  attachments: Attachment[]
+) {
+  await updateDoc(
+    doc(db, "households", householdId, "customLists", listId, "items", itemId),
+    { attachments }
+  );
 }

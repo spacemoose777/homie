@@ -17,8 +17,9 @@ import {
   deleteCustomListItem,
   clearCompletedCustomListItems,
   updateCustomListItemSortOrder,
+  updateCustomListItemAttachments,
 } from "@/lib/firebase/firestore";
-import type { CustomList, CustomListItem, ItemMemory } from "@/types";
+import type { CustomList, CustomListItem, ItemMemory, Attachment } from "@/types";
 import CustomListView from "@/components/lists/CustomListView";
 import CustomItemEditModal from "@/components/lists/CustomItemEditModal";
 import CreateListModal from "@/components/lists/CreateListModal";
@@ -112,6 +113,11 @@ export default function ListDetailPage() {
     await updateCustomListItemSortOrder(householdId, listId, itemId, newSortOrder);
   }
 
+  async function handleSaveAttachments(itemId: string, attachments: Attachment[]) {
+    if (!householdId) return;
+    await updateCustomListItemAttachments(householdId, listId, itemId, attachments);
+  }
+
   // No cross-list autocomplete memory — pass empty array
   const emptyMemory: ItemMemory[] = [];
 
@@ -195,7 +201,10 @@ export default function ListDetailPage() {
         <CustomItemEditModal
           item={editingItem}
           knownSections={knownSections}
+          householdId={householdId ?? ""}
+          listId={listId}
           onSave={handleEditSave}
+          onSaveAttachments={handleSaveAttachments}
           onClose={() => setEditingItem(null)}
         />
       )}

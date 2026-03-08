@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { X, AlertCircle } from "lucide-react";
-import type { CustomListItem } from "@/types";
+import type { CustomListItem, Attachment } from "@/types";
+import AttachmentSection from "@/components/shared/AttachmentSection";
 
 interface CustomItemEditModalProps {
   item: CustomListItem | null;
   knownSections: string[];
+  householdId: string;
+  listId: string;
   onSave: (updates: Partial<Omit<CustomListItem, "id" | "createdAt" | "addedBy">>) => void;
+  onSaveAttachments: (itemId: string, attachments: Attachment[]) => Promise<void>;
   onClose: () => void;
 }
 
@@ -17,7 +21,7 @@ const PRESET_SECTIONS = [
   "Baby", "Pet", "Hardware", "Medications", "Other",
 ];
 
-export default function CustomItemEditModal({ item, knownSections, onSave, onClose }: CustomItemEditModalProps) {
+export default function CustomItemEditModal({ item, knownSections, householdId, listId, onSave, onSaveAttachments, onClose }: CustomItemEditModalProps) {
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
   const [brandBackup, setBrandBackup] = useState("");
@@ -148,6 +152,13 @@ export default function CustomItemEditModal({ item, knownSections, onSave, onClo
               />
             </div>
           </label>
+
+          {/* Attachments */}
+          <AttachmentSection
+            attachments={item.attachments ?? []}
+            storagePath={`households/${householdId}/customLists/${listId}/items/${item.id}`}
+            onSave={(atts) => onSaveAttachments(item.id, atts)}
+          />
         </div>
 
         <div className="px-5 py-4 border-t border-gray-100 flex gap-3">

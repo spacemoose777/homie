@@ -3,13 +3,16 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { X, AlertCircle } from "lucide-react";
-import type { ShoppingItem, Store } from "@/types";
+import type { ShoppingItem, Store, Attachment } from "@/types";
+import AttachmentSection from "@/components/shared/AttachmentSection";
 
 interface ItemEditModalProps {
   item: ShoppingItem | null;
   stores: Store[];
   knownSections: string[];
+  householdId: string;
   onSave: (updates: Partial<Omit<ShoppingItem, "id" | "createdAt" | "addedBy">>) => void;
+  onSaveAttachments: (itemId: string, attachments: Attachment[]) => Promise<void>;
   onClose: () => void;
 }
 
@@ -19,7 +22,7 @@ const PRESET_SECTIONS = [
   "Baby", "Pet", "Other",
 ];
 
-export default function ItemEditModal({ item, stores, knownSections, onSave, onClose }: ItemEditModalProps) {
+export default function ItemEditModal({ item, stores, knownSections, householdId, onSave, onSaveAttachments, onClose }: ItemEditModalProps) {
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
   const [brandBackup, setBrandBackup] = useState("");
@@ -184,6 +187,13 @@ export default function ItemEditModal({ item, stores, knownSections, onSave, onC
               </p>
             )}
           </div>
+
+          {/* Attachments */}
+          <AttachmentSection
+            attachments={item.attachments ?? []}
+            storagePath={`households/${householdId}/shoppingItems/${item.id}`}
+            onSave={(atts) => onSaveAttachments(item.id, atts)}
+          />
         </div>
 
         {/* Footer */}

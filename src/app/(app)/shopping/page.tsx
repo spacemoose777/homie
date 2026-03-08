@@ -15,8 +15,9 @@ import {
   clearCompletedItems,
   loadAllItemMemory,
   updateShoppingItemSortOrder,
+  updateShoppingItemAttachments,
 } from "@/lib/firebase/firestore";
-import type { ShoppingItem, Store, ItemMemory } from "@/types";
+import type { ShoppingItem, Store, ItemMemory, Attachment } from "@/types";
 import ShoppingList from "@/components/shopping/ShoppingList";
 import AddItemBar from "@/components/shopping/AddItemBar";
 import FilterBar from "@/components/shopping/FilterBar";
@@ -123,6 +124,11 @@ export default function ShoppingPage() {
     await updateShoppingItemSortOrder(householdId, itemId, newSortOrder);
   }
 
+  async function handleSaveAttachments(itemId: string, attachments: Attachment[]) {
+    if (!householdId) return;
+    await updateShoppingItemAttachments(householdId, itemId, attachments);
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Header */}
@@ -203,7 +209,9 @@ export default function ShoppingPage() {
           item={editingItem}
           stores={stores}
           knownSections={knownSections}
+          householdId={householdId ?? ""}
           onSave={handleEditSave}
+          onSaveAttachments={handleSaveAttachments}
           onClose={() => setEditingItem(null)}
         />
       )}

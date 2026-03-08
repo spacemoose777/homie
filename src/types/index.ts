@@ -60,6 +60,7 @@ export interface ShoppingItem {
   urgent?: boolean;
   onlyAtStoreId?: string | null;
   sortOrder?: number;
+  attachments?: Attachment[];
 }
 
 // Item memory at /households/{hid}/itemMemory/{normalisedName}
@@ -68,6 +69,17 @@ export interface ItemMemory {
   brand: string | null;
   brandBackup: string | null;
   section: string | null;
+}
+
+// Attachment for shopping / list items
+export interface Attachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  path: string;
+  uploadedAt: string;
 }
 
 // Ingredient sub-model for meals
@@ -157,4 +169,5 @@ export interface CustomListItem {
   createdAt: Timestamp;
   urgent?: boolean;
   sortOrder?: number;
+  attachments?: Attachment[];
 }
