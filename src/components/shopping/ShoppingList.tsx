@@ -47,10 +47,11 @@ export default function ShoppingList({
     [stores]
   );
 
-  // With a dedicated handle, no delay needed — activate on movement > 5 px
+  // 500 ms hold activates drag; touchAction:none on the row stops the browser
+  // claiming the touch for page scroll before the delay completes
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { delay: 500, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 500, tolerance: 5 } })
   );
 
   const sorted = useMemo(() => {
