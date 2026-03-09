@@ -5,6 +5,7 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -46,9 +47,10 @@ export default function ShoppingList({
     [stores]
   );
 
-  // 500 ms hold activates drag; moving > 5 px during delay cancels it (allows scroll)
+  // With a dedicated handle, no delay needed — activate on movement > 5 px
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 500, tolerance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { distance: 5 } })
   );
 
   const sorted = useMemo(() => {
@@ -78,9 +80,13 @@ export default function ShoppingList({
       });
     }
 
-    // Default: checked last, then by sortOrder (lower = top)
+    // Default: checked last, urgent unchecked pinned to top, then by sortOrder
     return filtered.sort((a, b) => {
       if (a.checked !== b.checked) return a.checked ? 1 : -1;
+      if (!a.checked && !b.checked) {
+        if (a.urgent && !b.urgent) return -1;
+        if (!a.urgent && b.urgent) return 1;
+      }
       return getSortOrder(a) - getSortOrder(b);
     });
   }, [items, selectedSection, urgentOnly, activeStore]);

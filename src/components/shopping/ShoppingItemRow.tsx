@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Trash2, Pencil, AlertCircle, Store } from "lucide-react";
+import { Trash2, Pencil, AlertCircle, Store, GripVertical } from "lucide-react";
 import type { ShoppingItem } from "@/types";
 
 interface ShoppingItemRowProps {
@@ -56,12 +56,21 @@ export default function ShoppingItemRow({
         )}
       </button>
 
-      {/* Item body — press and hold to drag (unchecked only), quick tap to edit */}
+      {/* Drag handle — only on unchecked items */}
+      {!item.checked && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="flex-shrink-0 p-1 text-gray-300 cursor-grab active:cursor-grabbing touch-none"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical size={16} />
+        </div>
+      )}
+
+      {/* Item body */}
       <div
-        {...attributes}
-        {...listeners}
         className="flex-1 min-w-0 py-0.5 select-none"
-        style={{ touchAction: item.checked ? "auto" : "pan-y" }}
         onClick={onEdit}
         role="button"
         tabIndex={0}
