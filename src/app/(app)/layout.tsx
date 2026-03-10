@@ -4,7 +4,9 @@ export const dynamic = "force-dynamic";
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { enableNetwork, disableNetwork } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/firebase/config";
 import BottomNav from "@/components/layout/BottomNav";
 import Sidebar from "@/components/layout/Sidebar";
 
@@ -17,6 +19,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       router.replace("/login");
     }
   }, [user, loading, router]);
+
+  // Recycle Firestore's WebSocket when the app returns from background or
+  // when network connectivity is restored. Without this, a stale connection
+  // causes Firestore to hang waiting for network responses even though the
+  // socket is dead — the symptom is the app freezing until wifi is toggled.
+  useEffect(() => {
+    async function refreshConnection() {
+      try {
+        await disableNetwork(db);
+        await enableNetwork(db);
+      } catch {
+        // best-effort — Firestore will retry automatically
+      }
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") refreshConnection();
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("online", refreshConnection);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("online", refreshConnection);
+    };
+  }, []);
 
   // Apply theme and text-size to the root <html> element
   useEffect(() => {
