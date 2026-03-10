@@ -96,6 +96,9 @@ export default function ShoppingItemRow({
             </span>
           )}
         </div>
+        {item.notes && (
+          <p className="text-xs text-gray-400 mt-0.5 italic line-clamp-2">{item.notes}</p>
+        )}
       </div>
 
       {/* Edit */}

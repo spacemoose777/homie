@@ -60,6 +60,7 @@ export interface ShoppingItem {
   urgent?: boolean;
   onlyAtStoreId?: string | null;
   sortOrder?: number;
+  notes?: string | null;
   attachments?: Attachment[];
 }
 
@@ -169,5 +170,6 @@ export interface CustomListItem {
   createdAt: Timestamp;
   urgent?: boolean;
   sortOrder?: number;
+  notes?: string | null;
   attachments?: Attachment[];
 }

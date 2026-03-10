@@ -30,6 +30,7 @@ export default function ItemEditModal({ item, stores, knownSections, householdId
   const [quantity, setQuantity] = useState("");
   const [urgent, setUrgent] = useState(false);
   const [onlyAtStoreId, setOnlyAtStoreId] = useState<string>("");
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
     if (item) {
@@ -40,6 +41,7 @@ export default function ItemEditModal({ item, stores, knownSections, householdId
       setQuantity(item.quantity ?? "");
       setUrgent(item.urgent ?? false);
       setOnlyAtStoreId(item.onlyAtStoreId ?? "");
+      setNotes(item.notes ?? "");
     }
   }, [item]);
 
@@ -57,6 +59,7 @@ export default function ItemEditModal({ item, stores, knownSections, householdId
       quantity: quantity.trim() || null,
       urgent,
       onlyAtStoreId: onlyAtStoreId || null,
+      notes: notes.trim() || null,
     });
     onClose();
   }
@@ -186,6 +189,19 @@ export default function ItemEditModal({ item, stores, knownSections, householdId
                 to tag items as store-specific.
               </p>
             )}
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Any extra info — size, colour, where to find it…"
+              rows={3}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-colors resize-none"
+              style={{ "--tw-ring-color": "#FF6B6B33" } as React.CSSProperties}
+            />
           </div>
 
           {/* Attachments */}

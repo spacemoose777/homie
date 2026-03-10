@@ -63,15 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
+      setLoading(false); // Auth state is known — unblock the UI immediately
       if (u) {
-        await loadHouseholdData(u);
+        loadHouseholdData(u); // Profile/householdId load in background
       } else {
         setHouseholdId(null);
         setMemberProfile(null);
       }
-      setLoading(false);
     });
     return () => unsubscribe();
   }, []);

@@ -5,6 +5,7 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -140,7 +141,8 @@ export default function CustomListView({
   onReorder,
 }: CustomListViewProps) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 500, tolerance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
   const sorted = useMemo(() => {
@@ -190,7 +192,7 @@ export default function CustomListView({
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} onDragCancel={() => {}}>
       <SortableContext items={uncheckedIds} strategy={verticalListSortingStrategy}>
         <div className="space-y-2">
           {sorted.map((item) => (

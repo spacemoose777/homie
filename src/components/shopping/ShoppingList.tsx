@@ -47,11 +47,11 @@ export default function ShoppingList({
     [stores]
   );
 
-  // 500 ms hold activates drag; touchAction:none on the row stops the browser
-  // claiming the touch for page scroll before the delay completes
+  // 200 ms hold activates drag — short enough to minimise the touch-capture window
+  // that can block the bottom nav, long enough to distinguish from a tap
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 500, tolerance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 500, tolerance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
   const sorted = useMemo(() => {
@@ -140,6 +140,7 @@ export default function ShoppingList({
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
+      onDragCancel={() => {}} // ensures pointer capture is always released on interruption
     >
       <SortableContext items={uncheckedIds} strategy={verticalListSortingStrategy}>
         <div className="space-y-2">

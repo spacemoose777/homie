@@ -28,6 +28,7 @@ export default function CustomItemEditModal({ item, knownSections, householdId, 
   const [section, setSection] = useState("");
   const [quantity, setQuantity] = useState("");
   const [urgent, setUrgent] = useState(false);
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
     if (item) {
@@ -37,6 +38,7 @@ export default function CustomItemEditModal({ item, knownSections, householdId, 
       setSection(item.section ?? "");
       setQuantity(item.quantity ?? "");
       setUrgent(item.urgent ?? false);
+      setNotes(item.notes ?? "");
     }
   }, [item]);
 
@@ -52,6 +54,7 @@ export default function CustomItemEditModal({ item, knownSections, householdId, 
       section: section.trim() || null,
       quantity: quantity.trim() || null,
       urgent,
+      notes: notes.trim() || null,
     });
     onClose();
   }
@@ -152,6 +155,19 @@ export default function CustomItemEditModal({ item, knownSections, householdId, 
               />
             </div>
           </label>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Any extra info…"
+              rows={3}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-colors resize-none"
+              style={{ "--tw-ring-color": "#FF6B6B33" } as React.CSSProperties}
+            />
+          </div>
 
           {/* Attachments */}
           <AttachmentSection
