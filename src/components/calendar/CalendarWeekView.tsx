@@ -9,7 +9,7 @@ type MealEntry = { slot: string; mealId: string; mealName: string; hour: number 
 interface CalendarWeekViewProps {
   weekStart: Date;
   occurrences: EventOccurrence[];
-  mealEntries: MealEntry[];
+  mealsByDate: Record<string, MealEntry[]>;
   members: MemberProfile[];
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
@@ -19,7 +19,7 @@ interface CalendarWeekViewProps {
 export default function CalendarWeekView({
   weekStart,
   occurrences,
-  mealEntries,
+  mealsByDate,
   members,
   selectedDate,
   onSelectDate,
@@ -34,7 +34,7 @@ export default function CalendarWeekView({
         const todayDay = isToday(day);
         const selected = isSameDay(day, selectedDate);
         const dayEvents = occurrences.filter((o) => o.occurrenceDate === isoDate);
-        const dayMeals = isSameDay(day, selectedDate) ? mealEntries : [];
+        const dayMeals = mealsByDate[isoDate] ?? [];
         const isLast = idx === 6;
 
         return (

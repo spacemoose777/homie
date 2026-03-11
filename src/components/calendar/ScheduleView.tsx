@@ -11,13 +11,13 @@ const SLOT_LABEL: Record<string, string> = { breakfast: "Breakfast", lunch: "Lun
 
 interface ScheduleViewProps {
   occurrences: EventOccurrence[];
-  mealEntries: MealEntry[];
+  mealsByDate: Record<string, MealEntry[]>;
   members: MemberProfile[];
   selectedDate: Date;
   onEditEvent: (event: CalendarEvent) => void;
 }
 
-export default function ScheduleView({ occurrences, mealEntries, members, selectedDate, onEditEvent }: ScheduleViewProps) {
+export default function ScheduleView({ occurrences, mealsByDate, members, selectedDate, onEditEvent }: ScheduleViewProps) {
   const memberMap = new Map(members.map((m) => [m.uid, m]));
   const todayRef = useRef<HTMLDivElement>(null);
 
@@ -30,16 +30,15 @@ export default function ScheduleView({ occurrences, mealEntries, members, select
       if (!map.has(d)) map.set(d, { events: [], meals: [] });
       map.get(d)!.events.push(occ);
     }
-    for (const m of mealEntries) {
-      const d = format(selectedDate, "yyyy-MM-dd");
-      if (!map.has(d)) map.set(d, { events: [], meals: [] });
-      map.get(d)!.meals.push(m);
+    for (const [dateStr, entries] of Object.entries(mealsByDate)) {
+      if (!map.has(dateStr)) map.set(dateStr, { events: [], meals: [] });
+      map.get(dateStr)!.meals.push(...entries);
     }
 
     return [...map.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, { events, meals }]) => ({ date, events, meals }));
-  }, [occurrences, mealEntries, selectedDate]);
+  }, [occurrences, mealsByDate]);
 
   // Scroll today into view on mount
   useEffect(() => {

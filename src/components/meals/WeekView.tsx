@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Plus, X, ChefHat } from "lucide-react";
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay } from "date-fns";
 import type { Meal, WeekPlan, DayPlan, MemberProfile } from "@/types";
@@ -37,11 +38,19 @@ export default function WeekView({
   onSetCook,
 }: WeekViewProps) {
   const today = new Date();
+  const todayRef = useRef<HTMLDivElement>(null);
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const mealMap = new Map(meals.map((m) => [m.id, m]));
   const activeSlots = SLOTS.filter((s) => mealSlots.includes(s.key));
 
   void members; // available for future use (e.g. member colour dots)
+
+  // Scroll today's card into view when the week changes
+  useEffect(() => {
+    if (todayRef.current) {
+      todayRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [weekStart]);
 
   function getMealName(id: string | null | undefined): string | null {
     if (!id) return null;
@@ -99,6 +108,7 @@ export default function WeekView({
           return (
             <div
               key={isoDate}
+              ref={isToday ? todayRef : undefined}
               className="bg-white rounded-2xl shadow-sm border overflow-hidden"
               style={{ borderColor: isToday ? "#FF6B6B" : "#f3f4f6" }}
             >

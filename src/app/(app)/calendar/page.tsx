@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useMemo } from "react";
-import { startOfWeek, format, startOfMonth } from "date-fns";
+import { startOfWeek, format, startOfMonth, addWeeks } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   subscribeToCalendarEvents,
@@ -35,7 +35,7 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [members, setMembers] = useState<MemberProfile[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
-  const [weekPlan, setWeekPlan] = useState<WeekPlan | null>(null);
+  const [weekPlans, setWeekPlans] = useState<Map<string, WeekPlan>>(new Map());
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
@@ -61,12 +61,24 @@ export default function CalendarPage() {
     return subscribeToMeals(householdId, setMeals);
   }, [householdId]);
 
-  const selectedWeekStart = format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd");
-
+  // Subscribe to 8 weeks of meal plans starting from this week's Monday
   useEffect(() => {
     if (!householdId) return;
-    return subscribeToWeekPlan(householdId, selectedWeekStart, setWeekPlan);
-  }, [householdId, selectedWeekStart]);
+    const thisMonday = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const unsubs = Array.from({ length: 8 }, (_, i) => {
+      const weekDate = addWeeks(thisMonday, i);
+      const weekStr = format(weekDate, "yyyy-MM-dd");
+      return subscribeToWeekPlan(householdId, weekStr, (plan) => {
+        setWeekPlans((prev) => {
+          const next = new Map(prev);
+          if (plan) next.set(weekStr, plan);
+          else next.delete(weekStr);
+          return next;
+        });
+      });
+    });
+    return () => unsubs.forEach((u) => u());
+  }, [householdId]);
 
   // Expand events for a 3-month window
   const { occurrences, datesWithEvents } = useMemo(() => {
@@ -76,29 +88,34 @@ export default function CalendarPage() {
     const rangeEnd = format(rangeEndDate, "yyyy-MM-dd");
     const occ = expandEventsForRange(events, rangeStart, rangeEnd);
     const dates = getDatesWithEvents(occ);
-    if (weekPlan?.days) {
-      for (const [dateStr, dayPlan] of Object.entries(weekPlan.days)) {
+    for (const wp of weekPlans.values()) {
+      for (const [dateStr, dayPlan] of Object.entries(wp.days)) {
         if (Object.values(dayPlan).some((v) => v !== null)) dates.add(dateStr);
       }
     }
     return { occurrences: occ, datesWithEvents: dates };
-  }, [events, weekStart, weekPlan]);
+  }, [events, weekStart, weekPlans]);
 
-  // Meal entries for the selected day
-  const mealEntries = useMemo(() => {
-    const dateStr = format(selectedDate, "yyyy-MM-dd");
-    const dayPlan = weekPlan?.days?.[dateStr];
-    if (!dayPlan) return [];
+  // Meal entries grouped by date, across all subscribed weeks
+  type MealEntry = { slot: string; mealId: string; mealName: string; hour: number };
+  const mealsByDate = useMemo(() => {
+    const result: Record<string, MealEntry[]> = {};
     const mealMap = new Map(meals.map((m) => [m.id, m]));
-    return (Object.entries(dayPlan) as [string, string | null][])
-      .filter(([, id]) => id !== null)
-      .map(([slot, id]) => {
-        const meal = mealMap.get(id!);
-        return meal ? { slot, mealId: id!, mealName: meal.name, hour: SLOT_HOURS[slot] ?? 18 } : null;
-      })
-      .filter((e): e is { slot: string; mealId: string; mealName: string; hour: number } => e !== null)
-      .sort((a, b) => a.hour - b.hour);
-  }, [weekPlan, meals, selectedDate]);
+    for (const wp of weekPlans.values()) {
+      for (const [dateStr, dayPlan] of Object.entries(wp.days)) {
+        const entries = (Object.entries(dayPlan) as [string, string | null][])
+          .filter(([, id]) => id !== null)
+          .map(([slot, id]) => {
+            const meal = mealMap.get(id!);
+            return meal ? { slot, mealId: id!, mealName: meal.name, hour: SLOT_HOURS[slot] ?? 18 } : null;
+          })
+          .filter((e): e is MealEntry => e !== null)
+          .sort((a, b) => a.hour - b.hour);
+        if (entries.length > 0) result[dateStr] = entries;
+      }
+    }
+    return result;
+  }, [weekPlans, meals]);
 
   async function handleSaveEvent(
     data: Omit<CalendarEvent, "id" | "createdAt" | "createdBy" | "sourceType" | "googleEventId">
@@ -174,7 +191,7 @@ export default function CalendarPage() {
       {viewMode === "schedule" && (
         <ScheduleView
           occurrences={occurrences}
-          mealEntries={mealEntries}
+          mealsByDate={mealsByDate}
           members={members}
           selectedDate={selectedDate}
           onEditEvent={handleEditEvent}
@@ -196,7 +213,7 @@ export default function CalendarPage() {
           <CalendarWeekView
             weekStart={weekStart}
             occurrences={occurrences}
-            mealEntries={mealEntries}
+            mealsByDate={mealsByDate}
             members={members}
             selectedDate={selectedDate}
             onSelectDate={handleSelectDate}
