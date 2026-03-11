@@ -49,9 +49,9 @@ export default function MealEditModal({ meal, initialName, onSave, onClose }: Me
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[85dvh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
           <h2 className="font-semibold text-gray-900">
             {meal ? "Edit Meal" : "New Meal"}
           </h2>
@@ -60,7 +60,7 @@ export default function MealEditModal({ meal, initialName, onSave, onClose }: Me
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Meal name</label>
@@ -130,7 +130,7 @@ export default function MealEditModal({ meal, initialName, onSave, onClose }: Me
           </div>
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
+        <div className="px-5 py-4 border-t border-gray-100 flex gap-3 flex-shrink-0">
           <button
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600"
