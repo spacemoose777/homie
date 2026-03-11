@@ -26,12 +26,16 @@ import MealActionSheet from "@/components/meals/MealActionSheet";
 import RescheduleModal from "@/components/meals/RescheduleModal";
 import AddToShoppingButton from "@/components/meals/AddToShoppingButton";
 import CookPickerSheet from "@/components/meals/CookPickerSheet";
+import MealLibraryView from "@/components/meals/MealLibraryView";
+import ScheduleMealModal from "@/components/meals/ScheduleMealModal";
 
+type Tab = "schedule" | "library";
 type SlotTarget = { date: string; slot: keyof DayPlan } | null;
 type ViewingSlot = { mealId: string; date: string; slot: keyof DayPlan } | null;
 
 export default function MealsPage() {
   const { user, householdId } = useAuth();
+  const [tab, setTab] = useState<Tab>("schedule");
   const [meals, setMeals] = useState<Meal[]>([]);
   const [weekPlan, setWeekPlan] = useState<WeekPlan | null>(null);
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
@@ -46,7 +50,8 @@ export default function MealsPage() {
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
   const [viewingSlot, setViewingSlot] = useState<ViewingSlot>(null);
   const [rescheduling, setRescheduling] = useState<ViewingSlot>(null);
-  const [cookTarget, setCookTarget] = useState<string | null>(null); // ISO date
+  const [cookTarget, setCookTarget] = useState<string | null>(null);
+  const [schedulingMeal, setSchedulingMeal] = useState<Meal | null>(null);
 
   const weekStartStr = format(weekStart, "yyyy-MM-dd");
 
@@ -176,42 +181,92 @@ export default function MealsPage() {
 
   async function handleReschedule(toDate: string, toSlot: keyof DayPlan) {
     if (!householdId || !rescheduling) return;
-    // Clear from original slot, assign to new slot
     await updateDaySlot(householdId, weekStartStr, rescheduling.date, rescheduling.slot, null);
     await updateDaySlot(householdId, weekStartStr, toDate, toSlot, rescheduling.mealId);
     setRescheduling(null);
   }
 
+  // ── Schedule from library ────────────────────────────────────────
+
+  async function handleScheduleFromLibrary(
+    targetWeekStr: string,
+    date: string,
+    slot: keyof DayPlan
+  ) {
+    if (!householdId || !schedulingMeal) return;
+    await updateDaySlot(householdId, targetWeekStr, date, slot, schedulingMeal.id);
+    setSchedulingMeal(null);
+    // Switch to schedule view so the user can see where it landed
+    setTab("schedule");
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Meals</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Plan your week</p>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {tab === "schedule" ? "Plan your week" : "Your meal library"}
+          </p>
         </div>
-        <AddToShoppingButton
-          meals={meals}
-          weekPlan={weekPlan}
-          existingItems={shoppingItems}
-        />
+        {tab === "schedule" && (
+          <AddToShoppingButton
+            meals={meals}
+            weekPlan={weekPlan}
+            existingItems={shoppingItems}
+          />
+        )}
       </div>
 
-      {/* Week view */}
-      <WeekView
-        meals={meals}
-        weekPlan={weekPlan}
-        weekStart={weekStart}
-        mealSlots={mealSlots}
-        members={members}
-        onWeekChange={setWeekStart}
-        onPickMeal={(date, slot) => setSlotTarget({ date, slot })}
-        onClearSlot={handleClearSlot}
-        onMealTap={handleMealTap}
-        onSetCook={setCookTarget}
-      />
+      {/* Tab switcher */}
+      <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
+        <button
+          onClick={() => setTab("schedule")}
+          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+            tab === "schedule"
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Schedule
+        </button>
+        <button
+          onClick={() => setTab("library")}
+          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+            tab === "library"
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Library
+        </button>
+      </div>
 
-      {/* Meal picker */}
+      {/* Content */}
+      {tab === "schedule" ? (
+        <WeekView
+          meals={meals}
+          weekPlan={weekPlan}
+          weekStart={weekStart}
+          mealSlots={mealSlots}
+          members={members}
+          onWeekChange={setWeekStart}
+          onPickMeal={(date, slot) => setSlotTarget({ date, slot })}
+          onClearSlot={handleClearSlot}
+          onMealTap={handleMealTap}
+          onSetCook={setCookTarget}
+        />
+      ) : (
+        <MealLibraryView
+          meals={meals}
+          onEdit={setEditingMeal}
+          onSchedule={setSchedulingMeal}
+          onAddNew={() => setShowCreateMeal(true)}
+        />
+      )}
+
+      {/* Meal picker (schedule tab) */}
       {slotTarget && !showCreateMeal && (
         <MealPickerModal
           meals={meals}
@@ -222,7 +277,7 @@ export default function MealsPage() {
         />
       )}
 
-      {/* Create meal (with optional pre-filled name) */}
+      {/* Create meal */}
       {showCreateMeal && (
         <MealEditModal
           meal={null}
@@ -237,11 +292,12 @@ export default function MealsPage() {
         <MealEditModal
           meal={editingMeal}
           onSave={handleUpdateMeal}
+          onDelete={handleDeleteMeal}
           onClose={() => setEditingMeal(null)}
         />
       )}
 
-      {/* Action sheet — shown when tapping a meal in the planner */}
+      {/* Action sheet — tapping a meal in schedule view */}
       {viewingSlot && (
         <MealActionSheet
           mealName={mealMap.get(viewingSlot.mealId)?.name ?? ""}
@@ -273,6 +329,18 @@ export default function MealsPage() {
           currentCook={currentCookForTarget()}
           onSelect={handleSetCook}
           onClose={() => setCookTarget(null)}
+        />
+      )}
+
+      {/* Schedule from library */}
+      {schedulingMeal && householdId && (
+        <ScheduleMealModal
+          mealName={schedulingMeal.name}
+          householdId={householdId}
+          mealSlots={mealSlots}
+          initialWeekStart={weekStart}
+          onSchedule={handleScheduleFromLibrary}
+          onClose={() => setSchedulingMeal(null)}
         />
       )}
     </div>

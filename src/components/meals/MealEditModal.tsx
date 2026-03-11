@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 import type { Meal, Ingredient } from "@/types";
 import IngredientsEditor from "./IngredientsEditor";
 
@@ -9,10 +9,11 @@ interface MealEditModalProps {
   meal: Meal | null;
   initialName?: string;
   onSave: (data: { name: string; ingredients: Ingredient[]; tags: string[] }) => void;
+  onDelete?: () => void;
   onClose: () => void;
 }
 
-export default function MealEditModal({ meal, initialName, onSave, onClose }: MealEditModalProps) {
+export default function MealEditModal({ meal, initialName, onSave, onDelete, onClose }: MealEditModalProps) {
   const [name, setName] = useState("");
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -131,6 +132,15 @@ export default function MealEditModal({ meal, initialName, onSave, onClose }: Me
         </div>
 
         <div className="px-5 py-4 border-t border-gray-100 flex gap-3 flex-shrink-0">
+          {meal && onDelete && (
+            <button
+              onClick={onDelete}
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 border border-gray-200 transition-colors flex-shrink-0"
+              title="Delete meal"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
           <button
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600"
