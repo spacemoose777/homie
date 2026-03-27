@@ -10,6 +10,7 @@ interface ShoppingItemRowProps {
   storeName?: string;
   dimmed?: boolean;
   onToggle: (checked: boolean) => void;
+  onToggleUrgent: () => void;
   onDelete: () => void;
   onEdit: () => void;
 }
@@ -19,6 +20,7 @@ export default function ShoppingItemRow({
   storeName,
   dimmed,
   onToggle,
+  onToggleUrgent,
   onDelete,
   onEdit,
 }: ShoppingItemRowProps) {
@@ -100,6 +102,22 @@ export default function ShoppingItemRow({
           <p className="text-xs text-gray-400 mt-0.5 italic line-clamp-2">{item.notes}</p>
         )}
       </div>
+
+      {/* Urgent toggle */}
+      {!item.checked && (
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onToggleUrgent(); }}
+          className={`flex-shrink-0 p-1.5 transition-colors rounded-lg ${
+            item.urgent
+              ? "text-red-400 hover:text-red-600"
+              : "text-gray-300 hover:text-red-400"
+          }`}
+          aria-label={item.urgent ? "Remove urgent" : "Mark urgent"}
+        >
+          <AlertCircle size={15} />
+        </button>
+      )}
 
       {/* Edit */}
       <button

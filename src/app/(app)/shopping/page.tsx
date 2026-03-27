@@ -119,6 +119,13 @@ export default function ShoppingPage() {
     await clearCompletedItems(householdId);
   }
 
+  async function handleToggleUrgent(id: string, urgent: boolean) {
+    if (!householdId) return;
+    const updates: Partial<Omit<ShoppingItem, "id" | "createdAt" | "addedBy">> = { urgent };
+    if (urgent) updates.sortOrder = minUncheckedOrder() - 1000;
+    await updateShoppingItem(householdId, id, updates);
+  }
+
   async function handleReorder(itemId: string, newSortOrder: number) {
     if (!householdId) return;
     await updateShoppingItemSortOrder(householdId, itemId, newSortOrder);
@@ -198,6 +205,7 @@ export default function ShoppingPage() {
         urgentOnly={urgentOnly}
         activeStore={activeStore}
         onToggle={handleToggle}
+        onToggleUrgent={handleToggleUrgent}
         onDelete={handleDelete}
         onEdit={setEditingItem}
         onReorder={handleReorder}

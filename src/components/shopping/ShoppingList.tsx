@@ -21,6 +21,7 @@ interface ShoppingListProps {
   urgentOnly: boolean;
   activeStore: Store | null;
   onToggle: (id: string, checked: boolean) => void;
+  onToggleUrgent: (id: string, urgent: boolean) => void;
   onDelete: (id: string) => void;
   onEdit: (item: ShoppingItem) => void;
   onReorder: (itemId: string, newSortOrder: number) => void;
@@ -38,6 +39,7 @@ export default function ShoppingList({
   urgentOnly,
   activeStore,
   onToggle,
+  onToggleUrgent,
   onDelete,
   onEdit,
   onReorder,
@@ -160,6 +162,7 @@ export default function ShoppingList({
                 storeName={storeName}
                 dimmed={dimmed}
                 onToggle={(checked) => onToggle(item.id, checked)}
+                onToggleUrgent={() => onToggleUrgent(item.id, !item.urgent)}
                 onDelete={() => onDelete(item.id)}
                 onEdit={() => onEdit(item)}
               />
