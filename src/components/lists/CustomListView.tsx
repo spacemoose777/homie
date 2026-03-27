@@ -23,11 +23,13 @@ function getSortOrder(item: CustomListItem): number {
 function CustomListItemRow({
   item,
   onToggle,
+  onToggleUrgent,
   onDelete,
   onEdit,
 }: {
   item: CustomListItem;
   onToggle: (checked: boolean) => void;
+  onToggleUrgent: () => void;
   onDelete: () => void;
   onEdit: () => void;
 }) {
@@ -98,6 +100,22 @@ function CustomListItemRow({
         </div>
       </div>
 
+      {/* Urgent toggle */}
+      {!item.checked && (
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onToggleUrgent(); }}
+          className={`flex-shrink-0 p-1.5 transition-colors rounded-lg ${
+            item.urgent
+              ? "text-red-400 hover:text-red-600"
+              : "text-gray-300 hover:text-red-400"
+          }`}
+          aria-label={item.urgent ? "Remove urgent" : "Mark urgent"}
+        >
+          <AlertCircle size={15} />
+        </button>
+      )}
+
       {/* Edit */}
       <button
         onPointerDown={(e) => e.stopPropagation()}
@@ -126,6 +144,7 @@ interface CustomListViewProps {
   selectedSection: string | null;
   urgentOnly: boolean;
   onToggle: (id: string, checked: boolean) => void;
+  onToggleUrgent: (id: string, urgent: boolean) => void;
   onDelete: (id: string) => void;
   onEdit: (item: CustomListItem) => void;
   onReorder: (itemId: string, newSortOrder: number) => void;
@@ -136,6 +155,7 @@ export default function CustomListView({
   selectedSection,
   urgentOnly,
   onToggle,
+  onToggleUrgent,
   onDelete,
   onEdit,
   onReorder,
@@ -200,6 +220,7 @@ export default function CustomListView({
               key={item.id}
               item={item}
               onToggle={(checked) => onToggle(item.id, checked)}
+              onToggleUrgent={() => onToggleUrgent(item.id, !item.urgent)}
               onDelete={() => onDelete(item.id)}
               onEdit={() => onEdit(item)}
             />

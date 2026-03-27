@@ -177,6 +177,14 @@ export default function ListDetailPage() {
 
       {/* List */}
       <CustomListView
+        onToggleUrgent={async (id, urgent) => {
+          if (!householdId) return;
+          const item = items.find((i) => i.id === id);
+          if (!item) return;
+          const updates: Partial<Omit<CustomListItem, "id" | "createdAt" | "addedBy">> = { urgent };
+          if (urgent) updates.sortOrder = minUncheckedOrder() - 1000;
+          await updateCustomListItem(householdId, listId, id, updates);
+        }}
         items={items}
         selectedSection={selectedSection}
         urgentOnly={urgentOnly}
