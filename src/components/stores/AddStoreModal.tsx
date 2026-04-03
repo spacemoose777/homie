@@ -6,6 +6,8 @@ import { X, Plus, GripVertical, Trash2 } from "lucide-react";
 interface AddStoreModalProps {
   onSave: (name: string, departments: string[]) => void;
   onClose: () => void;
+  initialName?: string;
+  initialDepartments?: string[];
 }
 
 const DEFAULT_DEPARTMENTS = [
@@ -13,9 +15,10 @@ const DEFAULT_DEPARTMENTS = [
   "Pantry", "Frozen", "Beverages", "Cleaning", "Personal Care",
 ];
 
-export default function AddStoreModal({ onSave, onClose }: AddStoreModalProps) {
-  const [name, setName] = useState("");
-  const [departments, setDepartments] = useState<string[]>([]);
+export default function AddStoreModal({ onSave, onClose, initialName, initialDepartments }: AddStoreModalProps) {
+  const isEditing = Boolean(initialName !== undefined);
+  const [name, setName] = useState(initialName ?? "");
+  const [departments, setDepartments] = useState<string[]>(initialDepartments ?? []);
   const [newDept, setNewDept] = useState("");
 
   function addDept() {
@@ -52,7 +55,7 @@ export default function AddStoreModal({ onSave, onClose }: AddStoreModalProps) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">Add Store</h2>
+          <h2 className="font-semibold text-gray-900">{isEditing ? "Edit Store" : "Add Store"}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
           </button>
@@ -167,7 +170,7 @@ export default function AddStoreModal({ onSave, onClose }: AddStoreModalProps) {
             className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium disabled:opacity-50"
             style={{ backgroundColor: "#FF6B6B" }}
           >
-            Save store
+            {isEditing ? "Save changes" : "Save store"}
           </button>
         </div>
       </div>

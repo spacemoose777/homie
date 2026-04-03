@@ -227,6 +227,7 @@ export default function ShoppingPage() {
       {showStartShopping && (
         <StartShoppingModal
           stores={stores}
+          items={items}
           onStart={(store) => setActiveStore(store)}
           onClose={() => setShowStartShopping(false)}
         />

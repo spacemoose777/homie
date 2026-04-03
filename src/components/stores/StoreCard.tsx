@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, GripVertical, ChevronUp, ChevronDown, Store } from "lucide-react";
+import { Trash2, GripVertical, ChevronUp, ChevronDown, Store, Pencil } from "lucide-react";
 import type { Store as StoreType } from "@/types";
 
 interface StoreCardProps {
   store: StoreType;
   onDelete: () => void;
+  onEdit: () => void;
   onUpdateDepartments: (departments: string[]) => void;
 }
 
-export default function StoreCard({ store, onDelete, onUpdateDepartments }: StoreCardProps) {
+export default function StoreCard({ store, onDelete, onEdit, onUpdateDepartments }: StoreCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   function moveDept(from: number, to: number) {
@@ -43,6 +44,13 @@ export default function StoreCard({ store, onDelete, onUpdateDepartments }: Stor
             className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg text-xs"
           >
             {expanded ? "Hide" : "Departments"}
+          </button>
+          <button
+            onClick={onEdit}
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg"
+            aria-label="Edit store"
+          >
+            <Pencil size={14} />
           </button>
           <button
             onClick={onDelete}

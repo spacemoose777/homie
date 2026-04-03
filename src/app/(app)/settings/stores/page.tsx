@@ -19,6 +19,7 @@ export default function StoresPage() {
   const { householdId } = useAuth();
   const [stores, setStores] = useState<StoreType[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingStore, setEditingStore] = useState<StoreType | null>(null);
 
   useEffect(() => {
     if (!householdId) return;
@@ -29,6 +30,12 @@ export default function StoresPage() {
   async function handleAdd(name: string, departments: string[]) {
     if (!householdId) return;
     await addStore(householdId, { name, departments });
+  }
+
+  async function handleUpdate(name: string, departments: string[]) {
+    if (!householdId || !editingStore) return;
+    await updateStore(householdId, editingStore.id, { name, departments });
+    setEditingStore(null);
   }
 
   async function handleDelete(storeId: string) {
@@ -88,6 +95,7 @@ export default function StoresPage() {
             <StoreCard
               key={store.id}
               store={store}
+              onEdit={() => setEditingStore(store)}
               onDelete={() => handleDelete(store.id)}
               onUpdateDepartments={(departments) =>
                 handleUpdateDepartments(store.id, departments)
@@ -101,6 +109,15 @@ export default function StoresPage() {
         <AddStoreModal
           onSave={handleAdd}
           onClose={() => setShowAddModal(false)}
+        />
+      )}
+
+      {editingStore && (
+        <AddStoreModal
+          initialName={editingStore.name}
+          initialDepartments={editingStore.departments}
+          onSave={handleUpdate}
+          onClose={() => setEditingStore(null)}
         />
       )}
     </div>

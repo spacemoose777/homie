@@ -114,10 +114,10 @@ export default function ItemEditModal({ item, stores, knownSections, householdId
             </div>
           </div>
 
-          {/* Category — free text with suggestions from datalist */}
+          {/* Department — free text with suggestions from datalist */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category
+              Department
             </label>
             <input
               type="text"
