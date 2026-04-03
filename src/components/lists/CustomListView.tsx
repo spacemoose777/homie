@@ -5,7 +5,6 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
-  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -42,6 +41,7 @@ function CustomListItemRow({
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
       className={`flex items-center gap-2 px-3 py-3 bg-white rounded-2xl shadow-sm border border-gray-100 transition-opacity ${
         isDragging ? "opacity-50 shadow-lg z-10 relative" : ""
       } ${item.checked ? "opacity-60" : ""}`}
@@ -64,12 +64,9 @@ function CustomListItemRow({
         )}
       </button>
 
-      {/* Item body — press and hold to drag (unchecked only), quick tap to edit */}
+      {/* Item body — tap to edit */}
       <div
-        {...attributes}
-        {...listeners}
         className="flex-1 min-w-0 py-0.5 select-none"
-        style={{ touchAction: item.checked ? "auto" : "none" }}
         onClick={onEdit}
         role="button"
         tabIndex={0}
@@ -135,6 +132,21 @@ function CustomListItemRow({
       >
         <Trash2 size={14} />
       </button>
+
+      {/* Drag handle — touch-action:none scoped here so the rest of the item scrolls freely */}
+      {!item.checked && (
+        <div
+          {...listeners}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex-shrink-0 flex flex-col gap-0.5 p-1.5 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 transition-colors rounded-lg"
+          style={{ touchAction: "none" }}
+          aria-label="Drag to reorder"
+        >
+          <span className="block w-3.5 h-px bg-current rounded-full" />
+          <span className="block w-3.5 h-px bg-current rounded-full" />
+          <span className="block w-3.5 h-px bg-current rounded-full" />
+        </div>
+      )}
     </div>
   );
 }
@@ -160,9 +172,10 @@ export default function CustomListView({
   onEdit,
   onReorder,
 }: CustomListViewProps) {
+  // PointerSensor handles both mouse and touch via pointer events.
+  // TouchSensor is omitted — it required touch-action:none on the whole item body (breaking scroll).
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
   const sorted = useMemo(() => {

@@ -36,6 +36,7 @@ export default function ShoppingItemRow({
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
       className={`flex items-center gap-2 px-3 py-3 bg-white rounded-2xl shadow-sm border border-gray-100 transition-opacity ${
         isDragging ? "opacity-50 shadow-lg z-10 relative" : ""
       } ${dimmed ? "opacity-40" : ""} ${item.checked ? "opacity-60" : ""}`}
@@ -58,12 +59,9 @@ export default function ShoppingItemRow({
         )}
       </button>
 
-      {/* Item body — press and hold to drag (unchecked only), quick tap to edit */}
+      {/* Item body — tap to edit */}
       <div
-        {...attributes}
-        {...listeners}
         className="flex-1 min-w-0 py-0.5 select-none"
-        style={{ touchAction: item.checked ? "auto" : "none" }}
         onClick={onEdit}
         role="button"
         tabIndex={0}
@@ -138,6 +136,22 @@ export default function ShoppingItemRow({
       >
         <Trash2 size={14} />
       </button>
+
+      {/* Drag handle — only unchecked items are sortable.
+          touch-action:none is scoped here so the rest of the item can scroll freely. */}
+      {!item.checked && (
+        <div
+          {...listeners}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex-shrink-0 flex flex-col gap-0.5 p-1.5 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 transition-colors rounded-lg"
+          style={{ touchAction: "none" }}
+          aria-label="Drag to reorder"
+        >
+          <span className="block w-3.5 h-px bg-current rounded-full" />
+          <span className="block w-3.5 h-px bg-current rounded-full" />
+          <span className="block w-3.5 h-px bg-current rounded-full" />
+        </div>
+      )}
     </div>
   );
 }

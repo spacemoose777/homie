@@ -5,7 +5,6 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
-  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -51,9 +50,11 @@ export default function ShoppingList({
 
   // 200 ms hold activates drag — short enough to minimise the touch-capture window
   // that can block the bottom nav, long enough to distinguish from a tap
+  // PointerSensor handles both mouse and touch via pointer events.
+  // TouchSensor is omitted — it would fight with PointerSensor on touch devices
+  // and required touch-action:none on the whole item body (breaking scroll).
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
   const sorted = useMemo(() => {
