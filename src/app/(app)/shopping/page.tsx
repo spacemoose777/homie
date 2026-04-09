@@ -73,15 +73,15 @@ export default function ShoppingPage() {
     );
   }
 
-  async function handleAdd(name: string) {
+  async function handleAdd(name: string, mem?: ItemMemory) {
     if (!householdId || !user) return;
     // New items go to the TOP — give them a sortOrder below the current minimum
     const sortOrder = minUncheckedOrder() - 1000;
     await addShoppingItem(householdId, {
       name,
-      brand: null,
-      brandBackup: null,
-      section: null,
+      brand: mem?.brand ?? null,
+      brandBackup: mem?.brandBackup ?? null,
+      section: mem?.section ?? null,
       quantity: null,
       checked: false,
       addedBy: user.uid,

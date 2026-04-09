@@ -7,7 +7,7 @@ import type { ItemMemory, ShoppingItem } from "@/types";
 interface AddItemBarProps {
   memory: ItemMemory[];
   existingItems?: ShoppingItem[];
-  onAdd: (name: string) => void;
+  onAdd: (name: string, mem?: ItemMemory) => void;
 }
 
 function normalise(s: string) {
@@ -47,14 +47,16 @@ export default function AddItemBar({ memory, existingItems, onAdd }: AddItemBarP
     e.preventDefault();
     const trimmed = value.trim();
     if (!trimmed) return;
-    onAdd(trimmed);
+    // Apply stored memory fields (section, brand, etc.) if this name is recognised
+    const mem = memory.find((m) => normalise(m.name) === normalise(trimmed));
+    onAdd(trimmed, mem);
     setValue("");
     setSuggestions([]);
     inputRef.current?.focus();
   }
 
   function pickSuggestion(s: ItemMemory) {
-    onAdd(s.name);
+    onAdd(s.name, s);
     setValue("");
     setSuggestions([]);
     inputRef.current?.focus();
