@@ -21,8 +21,6 @@ jobs:
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
 
       - name: Deploy Firestore rules & indexes
-        run: |
-          firebase deploy --only firestore:rules,firestore:indexes \
-            --project ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: firebase deploy --only firestore:rules,firestore:indexes --project homie-8d36f
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
