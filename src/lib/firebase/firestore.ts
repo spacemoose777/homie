@@ -31,6 +31,7 @@ import type {
   CustomList,
   CustomListItem,
   Attachment,
+  Meeting,
   ThemeKey,
   ViewMode,
   UserRole,
@@ -650,4 +651,43 @@ export async function updateCustomListItemAttachments(
     doc(db, "households", householdId, "customLists", listId, "items", itemId),
     { attachments }
   );
+}
+
+// ── Meetings ──
+
+export function subscribeToMeetings(
+  householdId: string,
+  callback: (meetings: Meeting[]) => void
+) {
+  const ref = collection(db, "households", householdId, "meetings");
+  const q = query(ref, orderBy("date", "desc"));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Meeting)));
+  });
+}
+
+export async function addMeeting(
+  householdId: string,
+  data: { date: Timestamp; chairperson: string; otherItems: string[] },
+  createdBy: string
+): Promise<string> {
+  const ref = collection(db, "households", householdId, "meetings");
+  const docRef = await addDoc(ref, { ...data, createdBy, createdAt: Timestamp.now() });
+  return docRef.id;
+}
+
+export async function updateMeeting(
+  householdId: string,
+  meetingId: string,
+  data: Partial<{ date: Timestamp; chairperson: string; otherItems: string[] }>
+) {
+  await updateDoc(doc(db, "households", householdId, "meetings", meetingId), data);
+}
+
+export async function deleteMeeting(householdId: string, meetingId: string) {
+  await deleteDoc(doc(db, "households", householdId, "meetings", meetingId));
+}
+
+export async function updateMeetingStandingItems(householdId: string, standingItems: string[]) {
+  await updateDoc(doc(db, "households", householdId), { meetingStandingItems: standingItems });
 }

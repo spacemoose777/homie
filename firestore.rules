@@ -89,6 +89,11 @@ service cloud.firestore {
           allow read, write: if isMember(hid);
         }
       }
+
+      // ── /households/{hid}/meetings/{meetingId} ──
+      match /meetings/{meetingId} {
+        allow read, write: if isMember(hid);
+      }
     }
 
     // Allow collectionGroup queries on "invites" (needed by findInviteByToken)

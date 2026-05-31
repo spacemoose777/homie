@@ -34,6 +34,7 @@ export interface Household {
   createdAt: Timestamp;
   calendarEmail?: string;
   mealSlots?: string[];
+  meetingStandingItems?: string[];
 }
 
 // Invite document at /households/{hid}/invites/{token}
@@ -145,6 +146,16 @@ export interface Store {
   id: string;
   name: string;
   departments: string[];
+  createdAt: Timestamp;
+}
+
+// Meeting at /households/{hid}/meetings/{id}
+export interface Meeting {
+  id: string;
+  date: Timestamp;
+  chairperson: string;
+  otherItems: string[];
+  createdBy: string;
   createdAt: Timestamp;
 }
 

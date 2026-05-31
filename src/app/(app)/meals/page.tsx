@@ -201,7 +201,7 @@ export default function MealsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="max-w-2xl mx-auto px-4 pt-6 pb-28">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
