@@ -92,7 +92,7 @@ service cloud.firestore {
 
       // ── /households/{hid}/meetings/{meetingId} ──
       match /meetings/{meetingId} {
-        allow read, write: if isMember(hid);
+        allow read, write: if isMember(hid); // hui-whanau
       }
     }
 

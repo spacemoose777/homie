@@ -29,6 +29,7 @@ export default function HuiWhanauPage() {
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [showStanding, setShowStanding] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const standingItems = household?.meetingStandingItems ?? [];
 
@@ -53,8 +54,14 @@ export default function HuiWhanauPage() {
     otherItems: string[];
   }) {
     if (!householdId || !user) return;
-    await addMeeting(householdId, data, user.uid);
-    setShowNewMeeting(false);
+    try {
+      await addMeeting(householdId, data, user.uid);
+      setShowNewMeeting(false);
+      setSaveError(null);
+    } catch (e) {
+      setSaveError("Failed to save meeting. Please try again.");
+      console.error(e);
+    }
   }
 
   async function handleUpdateMeeting(data: {
@@ -63,15 +70,26 @@ export default function HuiWhanauPage() {
     otherItems: string[];
   }) {
     if (!householdId || !editingMeeting) return;
-    await updateMeeting(householdId, editingMeeting.id, data);
-    setEditingMeeting(null);
+    try {
+      await updateMeeting(householdId, editingMeeting.id, data);
+      setEditingMeeting(null);
+      setSaveError(null);
+    } catch (e) {
+      setSaveError("Failed to save meeting. Please try again.");
+      console.error(e);
+    }
   }
 
   async function handleDeleteMeeting() {
     if (!householdId || !editingMeeting) return;
-    await deleteMeeting(householdId, editingMeeting.id);
-    setEditingMeeting(null);
-    setExpandedId(null);
+    try {
+      await deleteMeeting(householdId, editingMeeting.id);
+      setEditingMeeting(null);
+      setExpandedId(null);
+    } catch (e) {
+      setSaveError("Failed to delete meeting. Please try again.");
+      console.error(e);
+    }
   }
 
   async function handleSaveStanding(items: string[]) {
@@ -199,6 +217,14 @@ export default function HuiWhanauPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {saveError && (
+        <div className="fixed bottom-20 left-0 right-0 flex justify-center z-[70] px-4">
+          <div className="bg-red-500 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
+            {saveError}
+          </div>
         </div>
       )}
 
