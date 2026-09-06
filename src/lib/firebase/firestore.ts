@@ -32,6 +32,7 @@ import type {
   CustomListItem,
   Attachment,
   Meeting,
+  WhanauTask,
   ThemeKey,
   ViewMode,
   UserRole,
@@ -690,4 +691,60 @@ export async function deleteMeeting(householdId: string, meetingId: string) {
 
 export async function updateMeetingStandingItems(householdId: string, standingItems: string[]) {
   await updateDoc(doc(db, "households", householdId), { meetingStandingItems: standingItems });
+}
+
+// ── Whānau Tasks ──
+
+export function subscribeToWhanauTasks(
+  householdId: string,
+  callback: (tasks: WhanauTask[]) => void
+) {
+  const ref = collection(db, "households", householdId, "whanauTasks");
+  const q = query(ref, orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const tasks: WhanauTask[] = snapshot.docs.map((d) => ({
+      ...(d.data() as Omit<WhanauTask, "id">),
+      id: d.id,
+    }));
+    callback(tasks);
+  });
+}
+
+export async function addWhanauTask(
+  householdId: string,
+  task: Omit<WhanauTask, "id" | "createdAt">
+) {
+  const ref = collection(db, "households", householdId, "whanauTasks");
+  const docRef = await addDoc(ref, { ...task, createdAt: Timestamp.now() });
+  return docRef.id;
+}
+
+export async function updateWhanauTask(
+  householdId: string,
+  taskId: string,
+  updates: Partial<Omit<WhanauTask, "id" | "createdAt" | "addedBy">>
+) {
+  await updateDoc(doc(db, "households", householdId, "whanauTasks", taskId), updates);
+}
+
+export async function toggleWhanauTask(householdId: string, taskId: string, checked: boolean) {
+  await updateDoc(doc(db, "households", householdId, "whanauTasks", taskId), { checked });
+}
+
+export async function updateWhanauTaskSortOrder(householdId: string, taskId: string, sortOrder: number) {
+  await updateDoc(doc(db, "households", householdId, "whanauTasks", taskId), { sortOrder });
+}
+
+export async function deleteWhanauTask(householdId: string, taskId: string) {
+  await deleteDoc(doc(db, "households", householdId, "whanauTasks", taskId));
+}
+
+export async function clearCompletedWhanauTasks(householdId: string) {
+  const ref = collection(db, "households", householdId, "whanauTasks");
+  const snapshot = await getDocs(ref);
+  const batch = writeBatch(db);
+  snapshot.docs.forEach((d) => {
+    if ((d.data() as WhanauTask).checked) batch.delete(d.ref);
+  });
+  await batch.commit();
 }

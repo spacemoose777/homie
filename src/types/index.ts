@@ -184,3 +184,17 @@ export interface CustomListItem {
   notes?: string | null;
   attachments?: Attachment[];
 }
+
+// Whānau task at /households/{hid}/whanauTasks/{id}
+export interface WhanauTask {
+  id: string;
+  name: string;
+  notes: string | null;
+  owner: string | null; // member uid, null = unassigned
+  category: string | null;
+  urgent: boolean;
+  checked: boolean;
+  addedBy: string;
+  createdAt: Timestamp;
+  sortOrder?: number;
+}
