@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import type { MemberProfile } from "@/types";
 
@@ -18,6 +18,27 @@ export default function CookPickerSheet({
   onClose,
 }: CookPickerSheetProps) {
   const [customText, setCustomText] = useState("");
+  const [keyboardInset, setKeyboardInset] = useState(0);
+
+  // On mobile, `fixed` elements anchor to the full layout viewport rather than
+  // the keyboard-shrunk visible area, so a bottom sheet like this one — and
+  // its "someone else" input — can end up parked underneath the on-screen
+  // keyboard. Track the Visual Viewport and shift the sheet up to stay clear.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    function handleResize() {
+      const inset = window.innerHeight - vv!.height - vv!.offsetTop;
+      setKeyboardInset(Math.max(0, Math.round(inset)));
+    }
+    vv.addEventListener("resize", handleResize);
+    vv.addEventListener("scroll", handleResize);
+    handleResize();
+    return () => {
+      vv.removeEventListener("resize", handleResize);
+      vv.removeEventListener("scroll", handleResize);
+    };
+  }, []);
 
   function handleMember(name: string) {
     onSelect(name === currentCook ? null : name);
@@ -37,8 +58,11 @@ export default function CookPickerSheet({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-2xl shadow-xl w-full max-w-md px-5 pt-5 pb-8"
-        style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
+        className="bg-white rounded-t-2xl shadow-xl w-full max-w-md px-5 pt-5 pb-8 transition-transform"
+        style={{
+          paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))",
+          transform: keyboardInset > 0 ? `translateY(-${keyboardInset}px)` : undefined,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
