@@ -21,6 +21,12 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  // Without this, modern Chrome/Safari resize only the *visual* viewport when
+  // the on-screen keyboard opens, not the layout viewport — so `fixed`
+  // bottom sheets (e.g. CookPickerSheet) can end up stranded underneath the
+  // keyboard. "resizes-content" makes the layout viewport shrink instead,
+  // so plain fixed/inset-0 positioning stays above the keyboard everywhere.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
