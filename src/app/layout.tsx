@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PWAInstallProvider } from "@/contexts/PWAInstallContext";
 import UpdatePrompt from "@/components/layout/UpdatePrompt";
+import OfflineBanner from "@/components/layout/OfflineBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -44,6 +45,7 @@ export default function RootLayout({
           <AuthProvider>
             {children}
             <UpdatePrompt />
+            <OfflineBanner />
           </AuthProvider>
         </PWAInstallProvider>
       </body>

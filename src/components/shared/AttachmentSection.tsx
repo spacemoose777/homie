@@ -83,10 +83,13 @@ export default function AttachmentSection({ attachments, storagePath, onSave }: 
           setUploading((prev) => prev.filter((u) => u.id !== uploadId));
         })
         .catch((err: Error) => {
+          // Attachments can't be queued offline like Firestore writes can —
+          // give a clearer reason than the raw Storage error in that case.
+          const message = !navigator.onLine
+            ? "You're offline — try again once you're back online"
+            : err.message || "Upload failed";
           setUploading((prev) =>
-            prev.map((u) =>
-              u.id === uploadId ? { ...u, error: err.message || "Upload failed" } : u
-            )
+            prev.map((u) => (u.id === uploadId ? { ...u, error: message } : u))
           );
         });
     });

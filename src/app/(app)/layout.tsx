@@ -10,9 +10,34 @@ import { db } from "@/lib/firebase/config";
 import BottomNav from "@/components/layout/BottomNav";
 import Sidebar from "@/components/layout/Sidebar";
 
+// Main tabs — warmed into the service worker's cache whenever we're online so
+// the whole app stays reachable offline, not just whichever tabs happen to
+// have been opened before. Kept in sync manually with BottomNav/Sidebar.
+const OFFLINE_ROUTES = [
+  "/shopping",
+  "/meals",
+  "/calendar",
+  "/lists",
+  "/whanau-tasks",
+  "/hui-whanau",
+  "/settings",
+];
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, memberProfile } = useAuth();
   const router = useRouter();
+
+  // Precache every main tab's HTML (for a full offline reload/relaunch) and
+  // RSC payload (for client-side nav while offline) so the app "just works"
+  // offline even on tabs the person hasn't personally opened yet. Safe to
+  // call repeatedly — it's a no-op once something's already cached and fresh.
+  function warmOfflineRoutes() {
+    if (!navigator.onLine) return;
+    OFFLINE_ROUTES.forEach((route) => {
+      router.prefetch(route);
+      fetch(route, { credentials: "same-origin" }).catch(() => {});
+    });
+  }
 
   useEffect(() => {
     if (!loading && !user) {
@@ -32,6 +57,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       } catch {
         // best-effort — Firestore will retry automatically
       }
+      warmOfflineRoutes();
     }
 
     function onVisibilityChange() {
@@ -44,7 +70,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("online", refreshConnection);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Also warm the cache right away on sign-in, rather than waiting for the
+  // first visibility/online event.
+  useEffect(() => {
+    if (user) warmOfflineRoutes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Apply theme and text-size to the root <html> element
   useEffect(() => {
