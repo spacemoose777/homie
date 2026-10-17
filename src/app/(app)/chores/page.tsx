@@ -176,15 +176,23 @@ export default function ChoresPage() {
           <h1 className="text-2xl font-bold text-gray-900">Chores</h1>
           <p className="text-sm text-gray-400 mt-0.5">{formatWeekRange(weekStart, weekEnd)}</p>
         </div>
-        {isAdmin && (
+        <div className="flex items-center gap-2">
           <Link
-            href="/chores/manage"
+            href="/chores/history"
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
           >
-            <Settings2 size={14} />
-            Manage
+            History
           </Link>
-        )}
+          {isAdmin && (
+            <Link
+              href="/chores/manage"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              <Settings2 size={14} />
+              Manage
+            </Link>
+          )}
+        </div>
       </div>
 
       {visibleLists.length === 0 && (

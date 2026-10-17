@@ -80,3 +80,10 @@ export function formatWeekRange(weekStartISO: string, weekEndISO: string): strin
 export function isPastOrCurrentWeek(weekStartISO: string, now: Date = new Date()): boolean {
   return weekStartISO <= getCurrentWeekBounds(now).weekStart;
 }
+
+/** Add (or subtract, with a negative count) whole weeks to a week-start date. */
+export function addWeeksISO(weekStartISO: string, weeks: number): string {
+  const date = parseDateISO(weekStartISO);
+  date.setUTCDate(date.getUTCDate() + weeks * 7);
+  return formatDateISO(date);
+}
