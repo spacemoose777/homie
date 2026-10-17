@@ -198,3 +198,116 @@ export interface WhanauTask {
   createdAt: Timestamp;
   sortOrder?: number;
 }
+
+// ── Chores ──
+// All money amounts are stored as integer cents ($20.00 = 2000) to avoid
+// floating-point rounding bugs.
+
+export type ChoreFrequency = "weekly";
+export type ChoreWeekStatus = "in_progress" | "submitted" | "approved" | "redo";
+export type ChoreJobStatus = "open" | "done" | "approved" | "redo";
+export type LedgerEntryType = "chore_week" | "chore_job" | "payout" | "adjustment";
+
+// A single task within a room, as defined on the checklist template
+export interface ChoreTaskDef {
+  id: string;
+  label: string;
+  sortOrder: number;
+}
+
+// A room grouping on the checklist template
+export interface ChoreRoomDef {
+  id: string;
+  name: string;
+  sortOrder: number;
+  tasks: ChoreTaskDef[];
+}
+
+// A task as it appears inside a week's snapshot — same as ChoreTaskDef plus
+// the per-week completion state
+export interface ChoreTaskProgress extends ChoreTaskDef {
+  done: boolean;
+  doneAt: Timestamp | null;
+}
+
+// A room as it appears inside a week's snapshot
+export interface ChoreRoomProgress {
+  id: string;
+  name: string;
+  sortOrder: number;
+  tasks: ChoreTaskProgress[];
+}
+
+// Checklist template at /households/{hid}/choreLists/{listId}
+export interface ChoreList {
+  id: string;
+  name: string;
+  frequency: ChoreFrequency; // only "weekly" exists in v1 — field exists so a
+  // second (e.g. daily, or a second child's) checklist can slot in later
+  assigneeUid: string;
+  amount: number; // cents — fixed amount for completing the whole checklist
+  rooms: ChoreRoomDef[];
+  active: boolean;
+  createdBy: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// A send-back note on a specific task within a week
+export interface ChoreRedoNote {
+  taskId: string;
+  note: string;
+  at: Timestamp;
+}
+
+// One tracked week at /households/{hid}/choreLists/{listId}/weeks/{weekId}
+// weekId is the ISO date of the Monday it starts, e.g. "2026-10-12"
+export interface ChoreWeek {
+  id: string;
+  listId: string;
+  assigneeUid: string;
+  weekStart: string; // ISO date, NZ wall-clock Monday
+  weekEnd: string; // ISO date, NZ wall-clock Sunday
+  rooms: ChoreRoomProgress[]; // snapshot of the list's rooms/tasks at week start
+  amount: number; // snapshot of the list's amount at week start
+  status: ChoreWeekStatus;
+  awardedAmount: number | null;
+  submittedAt: Timestamp | null;
+  approvedAt: Timestamp | null;
+  approvedBy: string | null;
+  parentNote: string | null;
+  redoNotes: ChoreRedoNote[];
+  createdAt: Timestamp;
+}
+
+// One-off paid job at /households/{hid}/choreJobs/{jobId}
+export interface ChoreJob {
+  id: string;
+  title: string;
+  notes: string | null;
+  amount: number; // cents
+  dueDate: string | null; // ISO date
+  assigneeUid: string;
+  status: ChoreJobStatus;
+  doneAt: Timestamp | null;
+  approvedAt: Timestamp | null;
+  approvedBy: string | null;
+  awardedAmount: number | null;
+  parentNote: string | null;
+  createdBy: string;
+  createdAt: Timestamp;
+}
+
+// Money ledger entry at /households/{hid}/ledger/{entryId}
+// A child's balance is always the live sum of their entries — never a stored
+// number that could drift from reality.
+export interface LedgerEntry {
+  id: string;
+  memberUid: string;
+  type: LedgerEntryType;
+  amount: number; // cents — positive = earning, negative = payout/deduction
+  sourceId: string | null; // the weekId or jobId this came from, if any
+  note: string | null;
+  createdBy: string;
+  createdAt: Timestamp;
+}

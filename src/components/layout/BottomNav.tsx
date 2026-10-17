@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, UtensilsCrossed, Calendar, LayoutList, Users, ListTodo, Settings } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed, Calendar, LayoutList, Users, ListTodo, ClipboardCheck, Settings } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/shopping", label: "Shopping", Icon: ShoppingCart },
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/calendar", label: "Calendar", Icon: Calendar },
   { href: "/lists", label: "Lists", Icon: LayoutList },
   { href: "/whanau-tasks", label: "Tasks", Icon: ListTodo },
+  { href: "/chores", label: "Chores", Icon: ClipboardCheck },
   { href: "/hui-whanau", label: "Hui", Icon: Users },
   { href: "/settings", label: "Settings", Icon: Settings },
 ];

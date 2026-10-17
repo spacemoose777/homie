@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, UtensilsCrossed, Calendar, LayoutList, Users, ListTodo, Settings, LogOut } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed, Calendar, LayoutList, Users, ListTodo, ClipboardCheck, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import HomieLogo from "@/components/HomieLogo";
 
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/calendar", label: "Calendar", Icon: Calendar },
   { href: "/lists", label: "Other Lists", Icon: LayoutList },
   { href: "/whanau-tasks", label: "Whānau Tasks", Icon: ListTodo },
+  { href: "/chores", label: "Chores", Icon: ClipboardCheck },
   { href: "/hui-whanau", label: "Hui Whānau", Icon: Users },
   { href: "/settings", label: "Settings", Icon: Settings },
 ];

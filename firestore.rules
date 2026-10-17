@@ -20,6 +20,10 @@ service cloud.firestore {
         get(/databases/$(database)/documents/households/$(hid)/members/$(request.auth.uid)).data.role == 'admin';
     }
 
+    function isSelf(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
     // ── /users/{uid} ──
     match /users/{uid} {
       allow read: if isAuth() && request.auth.uid == uid;
@@ -98,6 +102,45 @@ service cloud.firestore {
       // ── /households/{hid}/whanauTasks/{id} ──
       match /whanauTasks/{id} {
         allow read, write: if isMember(hid);
+      }
+
+      // ── /households/{hid}/choreLists/{listId} ──
+      match /choreLists/{listId} {
+        allow read: if isMember(hid);
+        allow create, update: if isAdmin(hid);
+        // No delete — retire a checklist via `active: false` instead, so its
+        // past weeks (nested below) are never orphaned.
+
+        // ── /households/{hid}/choreLists/{listId}/weeks/{weekId} ──
+        match /weeks/{weekId} {
+          allow read: if isMember(hid);
+
+          // A parent can start any week. The assignee (e.g. Sam) can only
+          // create their OWN week, in the starting state — never pre-approved.
+          allow create: if isMember(hid)
+            && request.resource.data.assigneeUid ==
+               get(/databases/$(database)/documents/households/$(hid)/choreLists/$(listId)).data.assigneeUid
+            && (isAdmin(hid) || isSelf(request.resource.data.assigneeUid))
+            && request.resource.data.status == 'in_progress'
+            && request.resource.data.awardedAmount == null
+            && request.resource.data.approvedAt == null
+            && request.resource.data.approvedBy == null;
+
+          // A parent can change anything (approve, adjust the amount, send a
+          // task back for redo, etc). The assignee can only tick tasks and
+          // submit their own week — the allowed-fields check below means
+          // they have no path to approve it, change the amount, or touch
+          // anyone else's week.
+          allow update: if isAdmin(hid)
+            || (
+              isSelf(resource.data.assigneeUid)
+              && resource.data.status in ['in_progress', 'redo']
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rooms', 'status', 'submittedAt'])
+              && request.resource.data.status in ['in_progress', 'submitted']
+            );
+
+          allow delete: if isAdmin(hid);
+        }
       }
     }
 
