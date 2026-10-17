@@ -9,6 +9,18 @@ export type ThemeKey = "midnight" | "slate" | "petal" | "sky" | "system";
 // View mode for shopping list
 export type ViewMode = "simple" | "detailed";
 
+// Which Chores push notifications a member wants — every key defaults to
+// true when absent, so existing members with no prefs doc get everything.
+export interface NotificationPrefs {
+  choreWeekStarted?: boolean; // to the assignee: a new week has begun
+  choreReminder?: boolean; // to the assignee: week not submitted yet
+  choreApproved?: boolean; // to the assignee: a week or job was approved
+  choreRedo?: boolean; // to the assignee: a task/job was sent back
+  choreJobAdded?: boolean; // to the assignee: a new paid job was created
+  choreSubmitted?: boolean; // to parents: the assignee submitted a week
+  choreJobDone?: boolean; // to parents: the assignee marked a job done
+}
+
 // User profile stored at /households/{hid}/members/{uid}
 export interface MemberProfile {
   uid: string;
@@ -19,6 +31,7 @@ export interface MemberProfile {
   colour: string;
   viewMode: ViewMode;
   textSize?: "sm" | "md" | "lg";
+  notificationPrefs?: NotificationPrefs;
   createdAt: Timestamp;
 }
 

@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { User, Home, Store, Calendar, ChevronRight, LogOut, Download, UtensilsCrossed } from "lucide-react";
+import { User, Home, Store, Calendar, ChevronRight, LogOut, Download, UtensilsCrossed, Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePWAInstall } from "@/contexts/PWAInstallContext";
 
@@ -37,6 +37,12 @@ const SETTINGS_ITEMS = [
     Icon: Calendar,
     label: "Calendar sync",
     description: "Shared Gmail address",
+  },
+  {
+    href: "/settings/notifications",
+    Icon: Bell,
+    label: "Notifications",
+    description: "Chores push notifications",
   },
 ];
 

@@ -19,6 +19,8 @@ import {
   getHouseholdMembers,
 } from "@/lib/firebase/firestore";
 import { getCurrentWeekBounds, formatWeekRange } from "@/lib/chores/week";
+import { notify } from "@/lib/notifications/notify";
+import { registerFCMToken } from "@/lib/notifications/fcm-token";
 import type { ChoreList, ChoreWeek, ChoreJob, MemberProfile } from "@/types";
 import ChoreRoomSection from "@/components/chores/ChoreRoomSection";
 import BalanceCard from "@/components/chores/BalanceCard";
@@ -48,6 +50,22 @@ function findTaskLabel(week: ChoreWeek, taskId: string): string | undefined {
     if (task) return task.label;
   }
   return undefined;
+}
+
+// Offer push notifications right after a real success moment (submitting a
+// week for the first time), not on page load — and only once, ever, so it
+// never nags. Declining here just means nothing happens; it's still always
+// reachable from Settings > Notifications.
+function maybeOfferNotifications(uid: string | undefined) {
+  if (!uid || typeof window === "undefined" || !("Notification" in window)) return;
+  if (Notification.permission !== "default") return;
+  const key = "homie-notif-offered";
+  if (localStorage.getItem(key)) return;
+  localStorage.setItem(key, "1");
+
+  if (confirm("Want a notification when this gets reviewed, or when there's a new paid job?")) {
+    registerFCMToken(uid).catch(() => {});
+  }
 }
 
 export default function ChoresPage() {
@@ -148,6 +166,8 @@ export default function ChoresPage() {
     setSubmitting(list.id);
     try {
       await submitChoreWeek(householdId, list.id, week.id);
+      notify({ type: "week_submitted", listId: list.id, weekId: week.id });
+      maybeOfferNotifications(user?.uid);
     } finally {
       setSubmitting(null);
     }
@@ -156,6 +176,7 @@ export default function ChoresPage() {
   async function handleMarkJobDone(jobId: string) {
     if (!householdId) return;
     await markChoreJobDone(householdId, jobId);
+    notify({ type: "job_done", jobId });
   }
 
   async function handleCreateJob(job: {
@@ -166,7 +187,8 @@ export default function ChoresPage() {
     assigneeUid: string;
   }) {
     if (!householdId || !user) return;
-    await createChoreJob(householdId, { ...job, createdBy: user.uid });
+    const jobId = await createChoreJob(householdId, { ...job, createdBy: user.uid });
+    notify({ type: "job_added", jobId });
   }
 
   return (

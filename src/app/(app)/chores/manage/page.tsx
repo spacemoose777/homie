@@ -21,6 +21,7 @@ import {
 } from "@/lib/firebase/firestore";
 import { SAM_WEEKLY_CLEAN_TEMPLATE, materializeTemplateRooms } from "@/lib/chores/templates";
 import { formatWeekRange } from "@/lib/chores/week";
+import { notify } from "@/lib/notifications/notify";
 import type {
   ChoreList,
   ChoreRoomDef,
@@ -131,11 +132,13 @@ export default function ManageChoresPage() {
       parentNote: note,
       approvedBy: user.uid,
     });
+    notify({ type: "week_approved", listId: reviewing.list.id, weekId: reviewing.week.id });
   }
 
   async function handleSendToRedo(rooms: ChoreRoomProgress[], redoNotes: ChoreRedoNote[]) {
     if (!householdId || !reviewing) return;
     await sendChoreWeekToRedo(householdId, reviewing.list.id, reviewing.week.id, rooms, redoNotes);
+    notify({ type: "week_redo", listId: reviewing.list.id, weekId: reviewing.week.id });
   }
 
   async function handleApproveJob(awardedAmount: number, note: string | null) {
@@ -146,11 +149,13 @@ export default function ManageChoresPage() {
       parentNote: note,
       approvedBy: user.uid,
     });
+    notify({ type: "job_approved", jobId: reviewingJob.id });
   }
 
   async function handleJobSendToRedo(note: string | null) {
     if (!householdId || !reviewingJob) return;
     await sendChoreJobToRedo(householdId, reviewingJob.id, note);
+    notify({ type: "job_redo", jobId: reviewingJob.id });
   }
 
   // Pending approval, newest first, across every list

@@ -40,6 +40,7 @@ import type {
   ChoreRedoNote,
   ChoreJob,
   LedgerEntry,
+  NotificationPrefs,
   ThemeKey,
   ViewMode,
   UserRole,
@@ -139,6 +140,14 @@ export async function updateMemberViewMode(householdId: string, uid: string, vie
 
 export async function updateMemberTextSize(householdId: string, uid: string, textSize: "sm" | "md" | "lg") {
   await updateDoc(doc(db, "households", householdId, "members", uid), { textSize });
+}
+
+export async function updateMemberNotificationPrefs(
+  householdId: string,
+  uid: string,
+  prefs: NotificationPrefs
+) {
+  await updateDoc(doc(db, "households", householdId, "members", uid), { notificationPrefs: prefs });
 }
 
 // ── Household Members ──

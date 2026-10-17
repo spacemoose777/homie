@@ -268,6 +268,18 @@ await check("outsider (different household) CANNOT read Sam's ledger entry", () 
   assertFails(getDoc(doc(outsiderDb, "households", HID, "ledger", "payout-1")))
 );
 
+console.log("\n=== fcm_tokens ===");
+
+await check("Sam CAN write his own fcm token", () =>
+  assertSucceeds(setDoc(doc(samDb, "users", CHILD_UID, "fcm_tokens", "token-abc"), {
+    token: "token-abc", updatedAt: new Date().toISOString(), userAgent: "test",
+  }))
+);
+
+await check("parent CANNOT read Sam's fcm tokens", () =>
+  assertFails(getDoc(doc(parentDb, "users", CHILD_UID, "fcm_tokens", "token-abc")))
+);
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await testEnv.cleanup();
 process.exit(failed > 0 ? 1 : 0);

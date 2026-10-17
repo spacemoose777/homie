@@ -29,6 +29,11 @@ service cloud.firestore {
       allow read: if isAuth() && request.auth.uid == uid;
       allow create: if isAuth() && request.auth.uid == uid;
       allow update: if isAuth() && request.auth.uid == uid;
+
+      // ── /users/{uid}/fcm_tokens/{token} ── push notification device tokens
+      match /fcm_tokens/{token} {
+        allow read, write: if isAuth() && request.auth.uid == uid;
+      }
     }
 
     // ── /households/{hid} ──
