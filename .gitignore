@@ -3,3 +3,6 @@ node_modules/
 .env.local
 public/sw.js
 public/sw.js.map
+firebase-debug.log
+firestore-debug.log
+.firebase/

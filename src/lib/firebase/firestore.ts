@@ -33,6 +33,10 @@ import type {
   Attachment,
   Meeting,
   WhanauTask,
+  ChoreList,
+  ChoreRoomDef,
+  ChoreRoomProgress,
+  ChoreWeek,
   ThemeKey,
   ViewMode,
   UserRole,
@@ -747,4 +751,140 @@ export async function clearCompletedWhanauTasks(householdId: string) {
     if ((d.data() as WhanauTask).checked) batch.delete(d.ref);
   });
   await batch.commit();
+}
+
+// ── Chores ──
+
+export function subscribeToChoreLists(
+  householdId: string,
+  callback: (lists: ChoreList[]) => void
+) {
+  const ref = collection(db, "households", householdId, "choreLists");
+  const q = query(ref, where("active", "==", true));
+  return onSnapshot(q, (snapshot) => {
+    const lists: ChoreList[] = snapshot.docs.map((d) => ({
+      ...(d.data() as Omit<ChoreList, "id">),
+      id: d.id,
+    }));
+    callback(lists);
+  });
+}
+
+export async function createChoreList(
+  householdId: string,
+  list: Omit<ChoreList, "id" | "createdAt" | "updatedAt" | "active">
+): Promise<string> {
+  const ref = collection(db, "households", householdId, "choreLists");
+  const now = Timestamp.now();
+  const docRef = await addDoc(ref, { ...list, active: true, createdAt: now, updatedAt: now });
+  return docRef.id;
+}
+
+// Updates the checklist template (name, amount, rooms/tasks). Does NOT touch
+// any week already in progress — those keep their own snapshot, which is the
+// whole point of snapshotting at week-start.
+export async function updateChoreList(
+  householdId: string,
+  listId: string,
+  updates: Partial<Pick<ChoreList, "name" | "amount" | "rooms" | "active">>
+) {
+  await updateDoc(doc(db, "households", householdId, "choreLists", listId), {
+    ...updates,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export function subscribeToChoreWeek(
+  householdId: string,
+  listId: string,
+  weekId: string,
+  callback: (week: ChoreWeek | null) => void
+) {
+  return onSnapshot(
+    doc(db, "households", householdId, "choreLists", listId, "weeks", weekId),
+    (snap) => callback(snap.exists() ? ({ ...(snap.data() as Omit<ChoreWeek, "id">), id: snap.id }) : null)
+  );
+}
+
+export function subscribeToChoreWeeks(
+  householdId: string,
+  listId: string,
+  callback: (weeks: ChoreWeek[]) => void
+) {
+  const ref = collection(db, "households", householdId, "choreLists", listId, "weeks");
+  const q = query(ref, orderBy("weekStart", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const weeks: ChoreWeek[] = snapshot.docs.map((d) => ({
+      ...(d.data() as Omit<ChoreWeek, "id">),
+      id: d.id,
+    }));
+    callback(weeks);
+  });
+}
+
+// Deep-copies a checklist's rooms/tasks into the per-week "progress" shape
+// (each task gains done/doneAt), for the week's snapshot.
+function snapshotRooms(rooms: ChoreRoomDef[]): ChoreRoomProgress[] {
+  return rooms.map((room) => ({
+    id: room.id,
+    name: room.name,
+    sortOrder: room.sortOrder,
+    tasks: room.tasks.map((task) => ({ ...task, done: false, doneAt: null })),
+  }));
+}
+
+// Gets the current week's doc for this checklist, creating it from the
+// checklist's current snapshot if it doesn't exist yet. There's no scheduled
+// job that rolls weeks over — the first person to open Chores that week
+// creates it. The doc id is deterministic (the week's start date), so this
+// is safe to call every time the page loads.
+export async function ensureChoreWeek(
+  householdId: string,
+  list: ChoreList,
+  weekStart: string,
+  weekEnd: string
+): Promise<ChoreWeek> {
+  const ref = doc(db, "households", householdId, "choreLists", list.id, "weeks", weekStart);
+  const existing = await getDoc(ref);
+  if (existing.exists()) {
+    return { ...(existing.data() as Omit<ChoreWeek, "id">), id: existing.id };
+  }
+
+  const week: Omit<ChoreWeek, "id"> = {
+    listId: list.id,
+    assigneeUid: list.assigneeUid,
+    weekStart,
+    weekEnd,
+    rooms: snapshotRooms(list.rooms),
+    amount: list.amount,
+    status: "in_progress",
+    awardedAmount: null,
+    submittedAt: null,
+    approvedAt: null,
+    approvedBy: null,
+    parentNote: null,
+    redoNotes: [],
+    createdAt: Timestamp.now(),
+  };
+  await setDoc(ref, week);
+  return { ...week, id: weekStart };
+}
+
+// Ticks/unticks tasks — rewrites the whole (small) rooms array in one write.
+export async function updateChoreWeekRooms(
+  householdId: string,
+  listId: string,
+  weekId: string,
+  rooms: ChoreRoomProgress[]
+) {
+  await updateDoc(doc(db, "households", householdId, "choreLists", listId, "weeks", weekId), {
+    rooms,
+  });
+}
+
+export async function submitChoreWeek(householdId: string, listId: string, weekId: string) {
+  await updateDoc(doc(db, "households", householdId, "choreLists", listId, "weeks", weekId), {
+    status: "submitted",
+    submittedAt: Timestamp.now(),
+  });
 }
