@@ -204,6 +204,42 @@ await check("outsider (different household) CANNOT read Sam's week", () =>
   assertFails(getDoc(doc(outsiderDb, "households", HID, "choreLists", "weekly-clean", "weeks", "2026-10-12")))
 );
 
+console.log("\n=== choreJobs ===");
+
+await check("parent CAN create a job", () =>
+  assertSucceeds(setDoc(doc(parentDb, "households", HID, "choreJobs", "job-1"), {
+    title: "Wash the car", notes: null, amount: 1000, dueDate: null, assigneeUid: CHILD_UID,
+    status: "open", doneAt: null, approvedAt: null, approvedBy: null, awardedAmount: null,
+    parentNote: null, createdBy: PARENT_UID, createdAt: Timestamp.now(),
+  }))
+);
+
+await check("Sam CANNOT create a job", () =>
+  assertFails(setDoc(doc(samDb, "households", HID, "choreJobs", "job-sneaky"), {
+    title: "Pay me", notes: null, amount: 999999, dueDate: null, assigneeUid: CHILD_UID,
+    status: "open", doneAt: null, approvedAt: null, approvedBy: null, awardedAmount: null,
+    parentNote: null, createdBy: CHILD_UID, createdAt: Timestamp.now(),
+  }))
+);
+
+await check("Sam CAN mark his own job done", () =>
+  assertSucceeds(updateDoc(doc(samDb, "households", HID, "choreJobs", "job-1"), {
+    status: "done", doneAt: Timestamp.now(),
+  }))
+);
+
+await check("Sam CANNOT approve his own job", () =>
+  assertFails(updateDoc(doc(samDb, "households", HID, "choreJobs", "job-1"), {
+    status: "approved", approvedBy: CHILD_UID, approvedAt: Timestamp.now(), awardedAmount: 1000,
+  }))
+);
+
+await check("parent CAN approve a job", () =>
+  assertSucceeds(updateDoc(doc(parentDb, "households", HID, "choreJobs", "job-1"), {
+    status: "approved", approvedBy: PARENT_UID, approvedAt: Timestamp.now(), awardedAmount: 1000,
+  }))
+);
+
 console.log("\n=== ledger ===");
 
 await check("Sam CANNOT create a ledger entry for himself", () =>

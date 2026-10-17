@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Timestamp } from "firebase/firestore";
-import { Settings2, CheckCircle2 } from "lucide-react";
+import { Settings2, CheckCircle2, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   subscribeToChoreLists,
@@ -13,12 +13,17 @@ import {
   subscribeToChoreWeek,
   updateChoreWeekRooms,
   submitChoreWeek,
+  subscribeToChoreJobs,
+  createChoreJob,
+  markChoreJobDone,
   getHouseholdMembers,
 } from "@/lib/firebase/firestore";
 import { getCurrentWeekBounds, formatWeekRange } from "@/lib/chores/week";
-import type { ChoreList, ChoreWeek, MemberProfile } from "@/types";
+import type { ChoreList, ChoreWeek, ChoreJob, MemberProfile } from "@/types";
 import ChoreRoomSection from "@/components/chores/ChoreRoomSection";
 import BalanceCard from "@/components/chores/BalanceCard";
+import JobCard from "@/components/chores/JobCard";
+import NewJobModal from "@/components/chores/NewJobModal";
 
 const STATUS_LABEL: Record<ChoreWeek["status"], string> = {
   in_progress: "In progress",
@@ -49,8 +54,10 @@ export default function ChoresPage() {
   const { user, householdId, memberProfile } = useAuth();
   const [lists, setLists] = useState<ChoreList[]>([]);
   const [weeks, setWeeks] = useState<Record<string, ChoreWeek | null>>({});
+  const [jobs, setJobs] = useState<ChoreJob[]>([]);
   const [members, setMembers] = useState<MemberProfile[]>([]);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [showNewJob, setShowNewJob] = useState(false);
 
   const isAdmin = memberProfile?.role === "admin";
   const { weekStart, weekEnd } = useMemo(() => getCurrentWeekBounds(), []);
@@ -58,6 +65,11 @@ export default function ChoresPage() {
   useEffect(() => {
     if (!householdId) return;
     return subscribeToChoreLists(householdId, setLists);
+  }, [householdId]);
+
+  useEffect(() => {
+    if (!householdId) return;
+    return subscribeToChoreJobs(householdId, setJobs);
   }, [householdId]);
 
   useEffect(() => {
@@ -73,6 +85,19 @@ export default function ChoresPage() {
     if (isAdmin) return lists;
     return lists.filter((l) => l.assigneeUid === user.uid);
   }, [lists, isAdmin, user]);
+
+  const visibleJobs = useMemo(() => {
+    if (!user) return [];
+    if (isAdmin) return jobs;
+    return jobs.filter((j) => j.assigneeUid === user.uid);
+  }, [jobs, isAdmin, user]);
+
+  // Balance cards: everyone sees their own; a parent also sees every child's.
+  const balanceUids = useMemo(() => {
+    if (!user) return [];
+    if (!isAdmin) return [user.uid];
+    return members.filter((m) => m.role === "child").map((m) => m.uid);
+  }, [members, isAdmin, user]);
 
   // Make sure each visible list's current week exists (no scheduled job
   // rolls weeks over — whoever opens Chores first that week starts it), then
@@ -126,6 +151,22 @@ export default function ChoresPage() {
     } finally {
       setSubmitting(null);
     }
+  }
+
+  async function handleMarkJobDone(jobId: string) {
+    if (!householdId) return;
+    await markChoreJobDone(householdId, jobId);
+  }
+
+  async function handleCreateJob(job: {
+    title: string;
+    notes: string | null;
+    amount: number;
+    dueDate: string | null;
+    assigneeUid: string;
+  }) {
+    if (!householdId || !user) return;
+    await createChoreJob(householdId, { ...job, createdBy: user.uid });
   }
 
   return (
@@ -242,24 +283,69 @@ export default function ChoresPage() {
                           : `Submit (${doneTasks}/${totalTasks} done)`}
                     </button>
                   )}
-
-                  {user && (
-                    <BalanceCard
-                      householdId={householdId!}
-                      memberUid={list.assigneeUid}
-                      memberName={
-                        members.find((m) => m.uid === list.assigneeUid)?.name ?? "Their"
-                      }
-                      canRecordPayouts={isAdmin}
-                      currentUid={user.uid}
-                    />
-                  )}
                 </div>
               )}
             </div>
           );
         })}
       </div>
+
+      {/* Paid jobs */}
+      {(visibleJobs.length > 0 || isAdmin) && (
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-gray-900">Paid Jobs</h2>
+            {isAdmin && (
+              <button
+                onClick={() => setShowNewJob(true)}
+                className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+              >
+                <Plus size={12} />
+                New job
+              </button>
+            )}
+          </div>
+          {visibleJobs.length === 0 ? (
+            <p className="text-sm text-gray-400">No paid jobs yet</p>
+          ) : (
+            <div className="space-y-3">
+              {visibleJobs.map((job) => (
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  canMarkDone={job.assigneeUid === user?.uid}
+                  onMarkDone={() => handleMarkJobDone(job.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Balances */}
+      {householdId && balanceUids.length > 0 && (
+        <div className="mt-8 space-y-3">
+          {balanceUids.map((uid) => (
+            <BalanceCard
+              key={uid}
+              householdId={householdId}
+              memberUid={uid}
+              memberName={members.find((m) => m.uid === uid)?.name ?? "Their"}
+              canRecordPayouts={isAdmin}
+              currentUid={user!.uid}
+            />
+          ))}
+        </div>
+      )}
+
+      {showNewJob && (
+        <NewJobModal
+          members={isAdmin ? members : members.filter((m) => m.uid === user?.uid)}
+          defaultAssigneeUid={!isAdmin ? user?.uid : undefined}
+          onCreate={handleCreateJob}
+          onClose={() => setShowNewJob(false)}
+        />
+      )}
     </div>
   );
 }

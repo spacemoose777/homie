@@ -143,6 +143,23 @@ service cloud.firestore {
         }
       }
 
+      // ── /households/{hid}/choreJobs/{jobId} ──
+      match /choreJobs/{jobId} {
+        allow read: if isMember(hid);
+        allow create, delete: if isAdmin(hid);
+
+        // A parent can change anything (approve, adjust the amount, send
+        // back, etc). The assignee can only flip their OWN open job to
+        // "done" — nothing else, same allowed-fields pattern as choreWeeks.
+        allow update: if isAdmin(hid)
+          || (
+            isSelf(resource.data.assigneeUid)
+            && resource.data.status == 'open'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'doneAt'])
+            && request.resource.data.status == 'done'
+          );
+      }
+
       // ── /households/{hid}/ledger/{entryId} ──
       // The money trail. Balance is always the live sum of these, never a
       // stored number — so there is nothing to protect except the entries

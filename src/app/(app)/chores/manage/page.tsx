@@ -10,17 +10,29 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   subscribeToChoreLists,
   subscribeToChoreWeeks,
+  subscribeToChoreJobs,
   createChoreList,
   updateChoreList,
   getHouseholdMembers,
   approveChoreWeek,
   sendChoreWeekToRedo,
+  approveChoreJob,
+  sendChoreJobToRedo,
 } from "@/lib/firebase/firestore";
 import { SAM_WEEKLY_CLEAN_TEMPLATE, materializeTemplateRooms } from "@/lib/chores/templates";
 import { formatWeekRange } from "@/lib/chores/week";
-import type { ChoreList, ChoreRoomDef, ChoreRoomProgress, ChoreWeek, ChoreRedoNote, MemberProfile } from "@/types";
+import type {
+  ChoreList,
+  ChoreRoomDef,
+  ChoreRoomProgress,
+  ChoreWeek,
+  ChoreJob,
+  ChoreRedoNote,
+  MemberProfile,
+} from "@/types";
 import ChecklistEditor from "@/components/chores/ChecklistEditor";
 import ApprovalModal from "@/components/chores/ApprovalModal";
+import JobApprovalModal from "@/components/chores/JobApprovalModal";
 
 export default function ManageChoresPage() {
   const { user, householdId, memberProfile, loading } = useAuth();
@@ -28,7 +40,9 @@ export default function ManageChoresPage() {
   const [lists, setLists] = useState<ChoreList[]>([]);
   const [members, setMembers] = useState<MemberProfile[]>([]);
   const [weeksByList, setWeeksByList] = useState<Record<string, ChoreWeek[]>>({});
+  const [jobs, setJobs] = useState<ChoreJob[]>([]);
   const [reviewing, setReviewing] = useState<{ list: ChoreList; week: ChoreWeek } | null>(null);
+  const [reviewingJob, setReviewingJob] = useState<ChoreJob | null>(null);
   const [creating, setCreating] = useState(false);
   const [templateAssignee, setTemplateAssignee] = useState("");
   const [templateAmount, setTemplateAmount] = useState(
@@ -60,6 +74,11 @@ export default function ManageChoresPage() {
     );
     return () => unsubs.forEach((u) => u());
   }, [householdId, lists]);
+
+  useEffect(() => {
+    if (!householdId) return;
+    return subscribeToChoreJobs(householdId, setJobs);
+  }, [householdId]);
 
   useEffect(() => {
     if (!householdId) return;
@@ -119,6 +138,21 @@ export default function ManageChoresPage() {
     await sendChoreWeekToRedo(householdId, reviewing.list.id, reviewing.week.id, rooms, redoNotes);
   }
 
+  async function handleApproveJob(awardedAmount: number, note: string | null) {
+    if (!householdId || !user || !reviewingJob) return;
+    await approveChoreJob(householdId, reviewingJob.id, {
+      memberUid: reviewingJob.assigneeUid,
+      awardedAmount,
+      parentNote: note,
+      approvedBy: user.uid,
+    });
+  }
+
+  async function handleJobSendToRedo(note: string | null) {
+    if (!householdId || !reviewingJob) return;
+    await sendChoreJobToRedo(householdId, reviewingJob.id, note);
+  }
+
   // Pending approval, newest first, across every list
   const pendingWeeks = Object.entries(weeksByList)
     .flatMap(([listId, weeks]) =>
@@ -128,6 +162,10 @@ export default function ManageChoresPage() {
     )
     .filter((x) => x.list)
     .sort((a, b) => (a.week.submittedAt?.toMillis() ?? 0) - (b.week.submittedAt?.toMillis() ?? 0));
+
+  const pendingJobs = jobs
+    .filter((j) => j.status === "done")
+    .sort((a, b) => (a.doneAt?.toMillis() ?? 0) - (b.doneAt?.toMillis() ?? 0));
 
   if (!isAdmin) return null;
 
@@ -143,13 +181,13 @@ export default function ManageChoresPage() {
 
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Manage checklists</h1>
 
-      {pendingWeeks.length > 0 && (
+      {(pendingWeeks.length > 0 || pendingJobs.length > 0) && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
           <p className="px-4 pt-4 pb-2 font-medium text-gray-700 flex items-center gap-2">
             <ClipboardCheck size={15} />
             Waiting for review
           </p>
-          {pendingWeeks.map(({ list, week }, i) => {
+          {pendingWeeks.map(({ list, week }) => {
             const assignee = members.find((m) => m.uid === list.assigneeUid);
             const total = week.rooms.reduce((n, r) => n + r.tasks.length, 0);
             const done = week.rooms.reduce((n, r) => n + r.tasks.filter((t) => t.done).length, 0);
@@ -157,9 +195,7 @@ export default function ManageChoresPage() {
               <button
                 key={week.id}
                 onClick={() => setReviewing({ list, week })}
-                className={`flex items-center justify-between w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                  i < pendingWeeks.length - 1 ? "border-b border-gray-100" : ""
-                }`}
+                className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
               >
                 <div>
                   <p className="text-sm font-medium text-gray-900">
@@ -170,7 +206,30 @@ export default function ManageChoresPage() {
                   </p>
                 </div>
                 <span
-                  className="text-xs font-medium px-2.5 py-1 rounded-full"
+                  className="text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-2"
+                  style={{ backgroundColor: "#FF6B6B", color: "white" }}
+                >
+                  Review
+                </span>
+              </button>
+            );
+          })}
+          {pendingJobs.map((job) => {
+            const assignee = members.find((m) => m.uid === job.assigneeUid);
+            return (
+              <button
+                key={job.id}
+                onClick={() => setReviewingJob(job)}
+                className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {assignee?.name ?? "Someone"} — {job.title}
+                  </p>
+                  <p className="text-xs text-gray-400">Paid job · ${(job.amount / 100).toFixed(2)}</p>
+                </div>
+                <span
+                  className="text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-2"
                   style={{ backgroundColor: "#FF6B6B", color: "white" }}
                 >
                   Review
@@ -288,6 +347,16 @@ export default function ManageChoresPage() {
           onApprove={handleApproveWeek}
           onSendToRedo={handleSendToRedo}
           onClose={() => setReviewing(null)}
+        />
+      )}
+
+      {reviewingJob && (
+        <JobApprovalModal
+          job={reviewingJob}
+          assigneeName={members.find((m) => m.uid === reviewingJob.assigneeUid)?.name ?? "Them"}
+          onApprove={handleApproveJob}
+          onSendToRedo={handleJobSendToRedo}
+          onClose={() => setReviewingJob(null)}
         />
       )}
     </div>

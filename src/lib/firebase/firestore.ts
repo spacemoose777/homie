@@ -38,6 +38,7 @@ import type {
   ChoreRoomProgress,
   ChoreWeek,
   ChoreRedoNote,
+  ChoreJob,
   LedgerEntry,
   ThemeKey,
   ViewMode,
@@ -946,6 +947,99 @@ export async function approveChoreWeek(
   batch.set(ledgerRef, entry);
 
   await batch.commit();
+}
+
+// ── Chore Jobs ──
+
+export function subscribeToChoreJobs(
+  householdId: string,
+  callback: (jobs: ChoreJob[]) => void
+) {
+  const ref = collection(db, "households", householdId, "choreJobs");
+  const q = query(ref, orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const jobs: ChoreJob[] = snapshot.docs.map((d) => ({
+      ...(d.data() as Omit<ChoreJob, "id">),
+      id: d.id,
+    }));
+    callback(jobs);
+  });
+}
+
+export async function createChoreJob(
+  householdId: string,
+  job: Pick<ChoreJob, "title" | "notes" | "amount" | "dueDate" | "assigneeUid" | "createdBy">
+): Promise<string> {
+  const ref = collection(db, "households", householdId, "choreJobs");
+  const doc_: Omit<ChoreJob, "id"> = {
+    ...job,
+    status: "open",
+    doneAt: null,
+    approvedAt: null,
+    approvedBy: null,
+    awardedAmount: null,
+    parentNote: null,
+    createdAt: Timestamp.now(),
+  };
+  const docRef = await addDoc(ref, doc_);
+  return docRef.id;
+}
+
+export async function markChoreJobDone(householdId: string, jobId: string) {
+  await updateDoc(doc(db, "households", householdId, "choreJobs", jobId), {
+    status: "done",
+    doneAt: Timestamp.now(),
+  });
+}
+
+export async function sendChoreJobToRedo(householdId: string, jobId: string, note: string | null) {
+  await updateDoc(doc(db, "households", householdId, "choreJobs", jobId), {
+    status: "open",
+    doneAt: null,
+    parentNote: note,
+  });
+}
+
+// Approves a job and records its (possibly quality-adjusted) payout in one
+// atomic batch — same reasoning as approveChoreWeek.
+export async function approveChoreJob(
+  householdId: string,
+  jobId: string,
+  params: {
+    memberUid: string;
+    awardedAmount: number;
+    parentNote: string | null;
+    approvedBy: string;
+  }
+) {
+  const batch = writeBatch(db);
+
+  const jobRef = doc(db, "households", householdId, "choreJobs", jobId);
+  batch.update(jobRef, {
+    status: "approved",
+    awardedAmount: params.awardedAmount,
+    approvedAt: Timestamp.now(),
+    approvedBy: params.approvedBy,
+    parentNote: params.parentNote,
+  });
+
+  const ledgerRef = doc(collection(db, "households", householdId, "ledger"));
+  const entry: Omit<LedgerEntry, "id"> = {
+    memberUid: params.memberUid,
+    type: "chore_job",
+    amount: params.awardedAmount,
+    sourceId: jobId,
+    note: params.parentNote,
+    createdBy: params.approvedBy,
+    createdAt: Timestamp.now(),
+  };
+  batch.set(ledgerRef, entry);
+
+  await batch.commit();
+}
+
+export async function deleteChoreJob(householdId: string, jobId: string) {
+  await deleteDoc(doc(db, "households", householdId, "choreJobs", jobId));
 }
 
 // ── Ledger ──
