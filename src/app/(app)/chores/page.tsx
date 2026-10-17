@@ -13,10 +13,12 @@ import {
   subscribeToChoreWeek,
   updateChoreWeekRooms,
   submitChoreWeek,
+  getHouseholdMembers,
 } from "@/lib/firebase/firestore";
 import { getCurrentWeekBounds, formatWeekRange } from "@/lib/chores/week";
-import type { ChoreList, ChoreWeek } from "@/types";
+import type { ChoreList, ChoreWeek, MemberProfile } from "@/types";
 import ChoreRoomSection from "@/components/chores/ChoreRoomSection";
+import BalanceCard from "@/components/chores/BalanceCard";
 
 const STATUS_LABEL: Record<ChoreWeek["status"], string> = {
   in_progress: "In progress",
@@ -25,10 +27,29 @@ const STATUS_LABEL: Record<ChoreWeek["status"], string> = {
   redo: "Sent back — check the note",
 };
 
+// All redoNotes created in the same send-back action share the exact same
+// `at` timestamp (the modal that creates them only calls Timestamp.now()
+// once per action) — so the most recent batch is just "every note with the
+// latest `at`".
+function latestRedoNotes(week: ChoreWeek) {
+  if (week.redoNotes.length === 0) return [];
+  const latestMillis = Math.max(...week.redoNotes.map((n) => n.at.toMillis()));
+  return week.redoNotes.filter((n) => n.at.toMillis() === latestMillis);
+}
+
+function findTaskLabel(week: ChoreWeek, taskId: string): string | undefined {
+  for (const room of week.rooms) {
+    const task = room.tasks.find((t) => t.id === taskId);
+    if (task) return task.label;
+  }
+  return undefined;
+}
+
 export default function ChoresPage() {
   const { user, householdId, memberProfile } = useAuth();
   const [lists, setLists] = useState<ChoreList[]>([]);
   const [weeks, setWeeks] = useState<Record<string, ChoreWeek | null>>({});
+  const [members, setMembers] = useState<MemberProfile[]>([]);
   const [submitting, setSubmitting] = useState<string | null>(null);
 
   const isAdmin = memberProfile?.role === "admin";
@@ -37,6 +58,11 @@ export default function ChoresPage() {
   useEffect(() => {
     if (!householdId) return;
     return subscribeToChoreLists(householdId, setLists);
+  }, [householdId]);
+
+  useEffect(() => {
+    if (!householdId) return;
+    getHouseholdMembers(householdId).then(setMembers);
   }, [householdId]);
 
   // Lists visible here: your own (if you're the assignee), or — for a
@@ -175,6 +201,20 @@ export default function ChoresPage() {
                 </div>
               )}
 
+              {week?.status === "redo" && week.redoNotes.length > 0 && (
+                <div className="mb-3 px-4 py-2.5 rounded-xl bg-orange-50 border border-orange-100 text-sm text-orange-700 space-y-1">
+                  {latestRedoNotes(week).map(({ taskId, note }) => {
+                    const label = findTaskLabel(week, taskId);
+                    return (
+                      <p key={taskId}>
+                        <span className="font-medium">{label ?? "A task"}:</span>{" "}
+                        {note || "Please redo this one"}
+                      </p>
+                    );
+                  })}
+                </div>
+              )}
+
               {!week ? (
                 <p className="text-sm text-gray-400 px-1">Starting this week's checklist…</p>
               ) : (
@@ -201,6 +241,18 @@ export default function ChoresPage() {
                           ? "Submitting…"
                           : `Submit (${doneTasks}/${totalTasks} done)`}
                     </button>
+                  )}
+
+                  {user && (
+                    <BalanceCard
+                      householdId={householdId!}
+                      memberUid={list.assigneeUid}
+                      memberName={
+                        members.find((m) => m.uid === list.assigneeUid)?.name ?? "Their"
+                      }
+                      canRecordPayouts={isAdmin}
+                      currentUid={user.uid}
+                    />
                   )}
                 </div>
               )}

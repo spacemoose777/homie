@@ -204,6 +204,34 @@ await check("outsider (different household) CANNOT read Sam's week", () =>
   assertFails(getDoc(doc(outsiderDb, "households", HID, "choreLists", "weekly-clean", "weeks", "2026-10-12")))
 );
 
+console.log("\n=== ledger ===");
+
+await check("Sam CANNOT create a ledger entry for himself", () =>
+  assertFails(setDoc(doc(samDb, "households", HID, "ledger", "fake-entry"), {
+    memberUid: CHILD_UID, type: "chore_week", amount: 999999, sourceId: null,
+    note: null, createdBy: CHILD_UID, createdAt: Timestamp.now(),
+  }))
+);
+
+await check("parent CAN create a ledger entry (e.g. recording a payout)", () =>
+  assertSucceeds(setDoc(doc(parentDb, "households", HID, "ledger", "payout-1"), {
+    memberUid: CHILD_UID, type: "payout", amount: -1000, sourceId: null,
+    note: "Paid $10 cash", createdBy: PARENT_UID, createdAt: Timestamp.now(),
+  }))
+);
+
+await check("Sam CAN read his own ledger entry", () =>
+  assertSucceeds(getDoc(doc(samDb, "households", HID, "ledger", "payout-1")))
+);
+
+await check("Sam CANNOT update a ledger entry", () =>
+  assertFails(updateDoc(doc(samDb, "households", HID, "ledger", "payout-1"), { amount: 0 }))
+);
+
+await check("outsider (different household) CANNOT read Sam's ledger entry", () =>
+  assertFails(getDoc(doc(outsiderDb, "households", HID, "ledger", "payout-1")))
+);
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await testEnv.cleanup();
 process.exit(failed > 0 ? 1 : 0);

@@ -142,6 +142,15 @@ service cloud.firestore {
           allow delete: if isAdmin(hid);
         }
       }
+
+      // ── /households/{hid}/ledger/{entryId} ──
+      // The money trail. Balance is always the live sum of these, never a
+      // stored number — so there is nothing to protect except the entries
+      // themselves, and only a parent may ever write one.
+      match /ledger/{entryId} {
+        allow read: if isAdmin(hid) || isSelf(resource.data.memberUid);
+        allow create, update, delete: if isAdmin(hid);
+      }
     }
 
     // Allow collectionGroup queries on "invites" (needed by findInviteByToken)

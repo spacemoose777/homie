@@ -5,23 +5,30 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Sparkles } from "lucide-react";
+import { ChevronLeft, Sparkles, ClipboardCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   subscribeToChoreLists,
+  subscribeToChoreWeeks,
   createChoreList,
   updateChoreList,
   getHouseholdMembers,
+  approveChoreWeek,
+  sendChoreWeekToRedo,
 } from "@/lib/firebase/firestore";
 import { SAM_WEEKLY_CLEAN_TEMPLATE, materializeTemplateRooms } from "@/lib/chores/templates";
-import type { ChoreList, ChoreRoomDef, MemberProfile } from "@/types";
+import { formatWeekRange } from "@/lib/chores/week";
+import type { ChoreList, ChoreRoomDef, ChoreRoomProgress, ChoreWeek, ChoreRedoNote, MemberProfile } from "@/types";
 import ChecklistEditor from "@/components/chores/ChecklistEditor";
+import ApprovalModal from "@/components/chores/ApprovalModal";
 
 export default function ManageChoresPage() {
   const { user, householdId, memberProfile, loading } = useAuth();
   const router = useRouter();
   const [lists, setLists] = useState<ChoreList[]>([]);
   const [members, setMembers] = useState<MemberProfile[]>([]);
+  const [weeksByList, setWeeksByList] = useState<Record<string, ChoreWeek[]>>({});
+  const [reviewing, setReviewing] = useState<{ list: ChoreList; week: ChoreWeek } | null>(null);
   const [creating, setCreating] = useState(false);
   const [templateAssignee, setTemplateAssignee] = useState("");
   const [templateAmount, setTemplateAmount] = useState(
@@ -40,6 +47,19 @@ export default function ManageChoresPage() {
     if (!householdId) return;
     return subscribeToChoreLists(householdId, setLists);
   }, [householdId]);
+
+  // Pending-approval queue — subscribe to every active list's weeks and
+  // filter down to "submitted" client-side (fine at this scale: at most a
+  // handful of lists, a handful of weeks of history each).
+  useEffect(() => {
+    if (!householdId) return;
+    const unsubs = lists.map((list) =>
+      subscribeToChoreWeeks(householdId, list.id, (weeks) => {
+        setWeeksByList((prev) => ({ ...prev, [list.id]: weeks }));
+      })
+    );
+    return () => unsubs.forEach((u) => u());
+  }, [householdId, lists]);
 
   useEffect(() => {
     if (!householdId) return;
@@ -84,6 +104,31 @@ export default function ManageChoresPage() {
     await updateChoreList(householdId, list.id, { amount: cents });
   }
 
+  async function handleApproveWeek(awardedAmount: number, note: string | null) {
+    if (!householdId || !user || !reviewing) return;
+    await approveChoreWeek(householdId, reviewing.list.id, reviewing.week.id, {
+      memberUid: reviewing.list.assigneeUid,
+      awardedAmount,
+      parentNote: note,
+      approvedBy: user.uid,
+    });
+  }
+
+  async function handleSendToRedo(rooms: ChoreRoomProgress[], redoNotes: ChoreRedoNote[]) {
+    if (!householdId || !reviewing) return;
+    await sendChoreWeekToRedo(householdId, reviewing.list.id, reviewing.week.id, rooms, redoNotes);
+  }
+
+  // Pending approval, newest first, across every list
+  const pendingWeeks = Object.entries(weeksByList)
+    .flatMap(([listId, weeks]) =>
+      weeks
+        .filter((w) => w.status === "submitted")
+        .map((week) => ({ list: lists.find((l) => l.id === listId)!, week }))
+    )
+    .filter((x) => x.list)
+    .sort((a, b) => (a.week.submittedAt?.toMillis() ?? 0) - (b.week.submittedAt?.toMillis() ?? 0));
+
   if (!isAdmin) return null;
 
   return (
@@ -97,6 +142,44 @@ export default function ManageChoresPage() {
       </Link>
 
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Manage checklists</h1>
+
+      {pendingWeeks.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+          <p className="px-4 pt-4 pb-2 font-medium text-gray-700 flex items-center gap-2">
+            <ClipboardCheck size={15} />
+            Waiting for review
+          </p>
+          {pendingWeeks.map(({ list, week }, i) => {
+            const assignee = members.find((m) => m.uid === list.assigneeUid);
+            const total = week.rooms.reduce((n, r) => n + r.tasks.length, 0);
+            const done = week.rooms.reduce((n, r) => n + r.tasks.filter((t) => t.done).length, 0);
+            return (
+              <button
+                key={week.id}
+                onClick={() => setReviewing({ list, week })}
+                className={`flex items-center justify-between w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+                  i < pendingWeeks.length - 1 ? "border-b border-gray-100" : ""
+                }`}
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {assignee?.name ?? "Someone"} — {list.name}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {formatWeekRange(week.weekStart, week.weekEnd)} · {done}/{total} done
+                  </p>
+                </div>
+                <span
+                  className="text-xs font-medium px-2.5 py-1 rounded-full"
+                  style={{ backgroundColor: "#FF6B6B", color: "white" }}
+                >
+                  Review
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {lists.length === 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
@@ -197,6 +280,16 @@ export default function ManageChoresPage() {
           );
         })}
       </div>
+
+      {reviewing && (
+        <ApprovalModal
+          week={reviewing.week}
+          assigneeName={members.find((m) => m.uid === reviewing.list.assigneeUid)?.name ?? "Them"}
+          onApprove={handleApproveWeek}
+          onSendToRedo={handleSendToRedo}
+          onClose={() => setReviewing(null)}
+        />
+      )}
     </div>
   );
 }

@@ -37,6 +37,8 @@ import type {
   ChoreRoomDef,
   ChoreRoomProgress,
   ChoreWeek,
+  ChoreRedoNote,
+  LedgerEntry,
   ThemeKey,
   ViewMode,
   UserRole,
@@ -887,4 +889,89 @@ export async function submitChoreWeek(householdId: string, listId: string, weekI
     status: "submitted",
     submittedAt: Timestamp.now(),
   });
+}
+
+// Sends one or more tasks back for redo. The caller (UI) decides which
+// tasks to un-tick and what the new redoNotes list looks like — this just
+// writes it, alongside flipping the week back to "redo" status.
+export async function sendChoreWeekToRedo(
+  householdId: string,
+  listId: string,
+  weekId: string,
+  rooms: ChoreRoomProgress[],
+  redoNotes: ChoreRedoNote[]
+) {
+  await updateDoc(doc(db, "households", householdId, "choreLists", listId, "weeks", weekId), {
+    rooms,
+    redoNotes,
+    status: "redo",
+  });
+}
+
+// Approves a week and records the (possibly quality-adjusted) payout in one
+// atomic batch, so a week can never end up "approved" with no ledger entry
+// to match, or vice versa.
+export async function approveChoreWeek(
+  householdId: string,
+  listId: string,
+  weekId: string,
+  params: {
+    memberUid: string;
+    awardedAmount: number;
+    parentNote: string | null;
+    approvedBy: string;
+  }
+) {
+  const batch = writeBatch(db);
+
+  const weekRef = doc(db, "households", householdId, "choreLists", listId, "weeks", weekId);
+  batch.update(weekRef, {
+    status: "approved",
+    awardedAmount: params.awardedAmount,
+    approvedAt: Timestamp.now(),
+    approvedBy: params.approvedBy,
+    parentNote: params.parentNote,
+  });
+
+  const ledgerRef = doc(collection(db, "households", householdId, "ledger"));
+  const entry: Omit<LedgerEntry, "id"> = {
+    memberUid: params.memberUid,
+    type: "chore_week",
+    amount: params.awardedAmount,
+    sourceId: weekId,
+    note: params.parentNote,
+    createdBy: params.approvedBy,
+    createdAt: Timestamp.now(),
+  };
+  batch.set(ledgerRef, entry);
+
+  await batch.commit();
+}
+
+// ── Ledger ──
+
+export function subscribeToLedger(
+  householdId: string,
+  memberUid: string,
+  callback: (entries: LedgerEntry[]) => void
+) {
+  const ref = collection(db, "households", householdId, "ledger");
+  const q = query(ref, where("memberUid", "==", memberUid), orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const entries: LedgerEntry[] = snapshot.docs.map((d) => ({
+      ...(d.data() as Omit<LedgerEntry, "id">),
+      id: d.id,
+    }));
+    callback(entries);
+  });
+}
+
+// For payouts ("Paid Sam $20 cash") and manual adjustments — anything that
+// isn't tied to approving a chore week or job.
+export async function addLedgerEntry(
+  householdId: string,
+  entry: Omit<LedgerEntry, "id" | "createdAt">
+) {
+  const ref = collection(db, "households", householdId, "ledger");
+  await addDoc(ref, { ...entry, createdAt: Timestamp.now() });
 }
